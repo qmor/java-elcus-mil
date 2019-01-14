@@ -15,13 +15,6 @@ public class Elcus1553Device {
 	static final int TMK_VERSION_MIN =0x0403; /* v4.03 */
 	static final int TMK_VERSION =0x0406 ;    /* v4.06 */
 
-
-	//#ifdef _TMK1553B_MRT
-	//static final int MAX_TMK_NUMBER (32-1)
-	//#else
-	//static final int MAX_TMK_NUMBER (8-1)
-	//#endif //def TMK1553B_MRT
-
 	static final int MIN_TMK_TYPE =2;
 	static final int MAX_TMK_TYPE= 12;
 
@@ -367,6 +360,24 @@ public class Elcus1553Device {
 
 	static final int TMK_IOC_MAXNR =106;
 	static final int  TMK_IOCGetVersion = ioctl._IO(TMK_IOC_MAGIC, VTMK_GetVersion+TMK_IOC0);
+	static final int TMK_IOCmrtdefbrcpage = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtdefbrcpage+TMK_IOC0);
+	
+	/*#define mtdefirqmode bcdefirqmode
+	#define mtgetirqmode bcgetirqmode
+	#define mtgetmaxbase bcgetmaxbase
+	#define mtdefbase bcdefbase
+	#define mtgetbase bcgetbase
+	#define mtputw bcputw
+	#define mtgetw bcgetw
+	#define mtputblk bcputblk
+	#define mtgetblk bcgetblk
+	#define mtstartx bcstartx
+	#define mtdeflink bcdeflink
+	#define mtgetlink bcgetlink
+	#define mtstop bcstop
+	#define mtgetstate bcgetstate
+	#define mtgetmsgtime bcgetmsgtime*/
+	
 	static int _hVTMK4VxD = 0;
 	
 	static final int  TMK_IOCtmkconfig = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkconfig+TMK_IOC0);
@@ -483,7 +494,6 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCtmktimeout  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmktimeout+TMK_IOC0);
 
-	static final int  TMK_IOCmrtdefbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtdefbrcpage+TMK_IOC0);
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 	
 	private class union extends Union
