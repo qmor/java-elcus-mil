@@ -1,5 +1,8 @@
 package ru.elcus.mil;
 
+import com.sun.jna.Structure;
+import com.sun.jna.Union;
+
 /**
  * Порт C++ класса для работы с платами (PCI, PCI-E) МКО от Элкус
  * @author qmor
@@ -366,13 +369,193 @@ public class Elcus1553Device {
 	static final int  TMK_IOCGetVersion = ioctl._IO(TMK_IOC_MAGIC, VTMK_GetVersion+TMK_IOC0);
 	static int _hVTMK4VxD = 0;
 	
+	static final int  TMK_IOCtmkconfig = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkconfig+TMK_IOC0);
+	static final int  TMK_IOCtmkdone = ioctl. _IO(TMK_IOC_MAGIC, VTMK_tmkdone+TMK_IOC0);
+	static final int  TMK_IOCtmkgetmaxn  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgetmaxn+TMK_IOC0);
+	static final int  TMK_IOCtmkselect  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkselect+TMK_IOC0);
+	static final int  TMK_IOCtmkselected  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkselected+TMK_IOC0);
+	static final int  TMK_IOCtmkgetmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgetmode+TMK_IOC0);
+	static final int  TMK_IOCtmksetcwbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmksetcwbits+TMK_IOC0);
+	static final int  TMK_IOCtmkclrcwbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkclrcwbits+TMK_IOC0);
+	static final int  TMK_IOCtmkgetcwbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgetcwbits+TMK_IOC0);
+	static final int  TMK_IOCtmkwaitevents  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_tmkwaitevents+TMK_IOC0, 8);
+	
+	static final int  TMK_IOCtmkgetevd  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetevd+TMK_IOC0, 22);
+
+	static final int  TMK_IOCbcreset  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcreset+TMK_IOC0);
+	//static final int  TMK_IOCbc_def_tldw _IO(TMK_IOC_MAGIC, VTMK_bc_def_tldw+TMK_IOC0)
+	//static final int  TMK_IOCbc_enable_di _IO(TMK_IOC_MAGIC, VTMK_bc_enable_di+TMK_IOC0)
+	//static final int  TMK_IOCbc_disable_di _IO(TMK_IOC_MAGIC, VTMK_bc_disable_di+TMK_IOC0)
+	static final int  TMK_IOCbcdefirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcdefirqmode+TMK_IOC0);
+	static final int  TMK_IOCbcgetirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcgetirqmode+TMK_IOC0);
+	static final int  TMK_IOCbcgetmaxbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcgetmaxbase+TMK_IOC0);
+	static final int  TMK_IOCbcdefbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcdefbase+TMK_IOC0);
+	static final int  TMK_IOCbcgetbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcgetbase+TMK_IOC0);
+	static final int  TMK_IOCbcputw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcputw+TMK_IOC0);
+	static final int  TMK_IOCbcgetw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcgetw+TMK_IOC0);
+	static final int  TMK_IOCbcgetansw  = ioctl._IOWR(TMK_IOC_MAGIC, VTMK_bcgetansw+TMK_IOC0, 4);
+	static final int  TMK_IOCbcputblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_bcputblk+TMK_IOC0, 16);
+	static final int  TMK_IOCbcgetblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_bcgetblk+TMK_IOC0, 16);
+	static final int  TMK_IOCbcdefbus  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcdefbus+TMK_IOC0);
+	static final int  TMK_IOCbcgetbus  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcgetbus+TMK_IOC0);
+	static final int  TMK_IOCbcstart  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcstart+TMK_IOC0);
+	static final int  TMK_IOCbcstartx  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcstartx+TMK_IOC0);
+	static final int  TMK_IOCbcdeflink  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcdeflink+TMK_IOC0);
+	static final int  TMK_IOCbcgetlink  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_bcgetlink+TMK_IOC0, 4);
+	static final int  TMK_IOCbcstop  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcstop+TMK_IOC0);
+	static final int  TMK_IOCbcgetstate  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_bcgetstate+TMK_IOC0, 4);
+
+	static final int  TMK_IOCrtreset  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtreset+TMK_IOC0);
+	static final int  TMK_IOCrtdefirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefirqmode+TMK_IOC0);
+	static final int  TMK_IOCrtgetirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetirqmode+TMK_IOC0);
+	static final int  TMK_IOCrtdefmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefmode+TMK_IOC0);
+	static final int  TMK_IOCrtgetmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetmode+TMK_IOC0);
+	static final int  TMK_IOCrtgetmaxpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetmaxpage+TMK_IOC0);
+	static final int  TMK_IOCrtdefpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefpage+TMK_IOC0);
+	static final int  TMK_IOCrtgetpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetpage+TMK_IOC0);
+	static final int  TMK_IOCrtdefpagepc  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefpagepc+TMK_IOC0);
+	static final int  TMK_IOCrtdefpagebus  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefpagebus+TMK_IOC0);
+	static final int  TMK_IOCrtgetpagepc  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetpagepc+TMK_IOC0);
+	static final int  TMK_IOCrtgetpagebus  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetpagebus+TMK_IOC0);
+	static final int  TMK_IOCrtdefaddress  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefaddress+TMK_IOC0);
+	static final int  TMK_IOCrtgetaddress  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetaddress+TMK_IOC0);
+	static final int  TMK_IOCrtdefsubaddr  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtdefsubaddr+TMK_IOC0);
+	static final int  TMK_IOCrtgetsubaddr  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetsubaddr+TMK_IOC0);
+	static final int  TMK_IOCrtputw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtputw+TMK_IOC0);
+	static final int  TMK_IOCrtgetw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetw+TMK_IOC0);
+	static final int  TMK_IOCrtputblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_rtputblk+TMK_IOC0, 16);
+	static final int  TMK_IOCrtgetblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_rtgetblk+TMK_IOC0, 16);
+	static final int  TMK_IOCrtsetanswbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtsetanswbits+TMK_IOC0);
+	static final int  TMK_IOCrtclranswbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtclranswbits+TMK_IOC0);
+	static final int  TMK_IOCrtgetanswbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetanswbits+TMK_IOC0);
+	static final int  TMK_IOCrtgetflags  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_rtgetflags+TMK_IOC0, 16);
+	static final int  TMK_IOCrtputflags  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_rtputflags+TMK_IOC0, 16);
+	static final int  TMK_IOCrtsetflag  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtsetflag+TMK_IOC0);
+	static final int  TMK_IOCrtclrflag  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtclrflag+TMK_IOC0);
+	static final int  TMK_IOCrtgetflag  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetflag+TMK_IOC0);
+	static final int  TMK_IOCrtgetstate  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetstate+TMK_IOC0);
+	static final int  TMK_IOCrtbusy  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtbusy+TMK_IOC0);
+	static final int  TMK_IOCrtlock  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtlock+TMK_IOC0);
+	static final int  TMK_IOCrtunlock  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtunlock+TMK_IOC0);
+	static final int  TMK_IOCrtgetcmddata  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtgetcmddata+TMK_IOC0);
+	static final int  TMK_IOCrtputcmddata  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtputcmddata+TMK_IOC0);
+
+	static final int  TMK_IOCmtreset  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtreset+TMK_IOC0);
+	static final int  TMK_IOCmtdefirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtdefirqmode+TMK_IOC0);
+	static final int  TMK_IOCmtgetirqmode  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtgetirqmode+TMK_IOC0);
+	static final int  TMK_IOCmtgetmaxbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtgetmaxbase+TMK_IOC0);
+	static final int  TMK_IOCmtdefbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtdefbase+TMK_IOC0);
+	static final int  TMK_IOCmtgetbase  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtgetbase+TMK_IOC0);
+	static final int  TMK_IOCmtputw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtputw+TMK_IOC0);
+	static final int  TMK_IOCmtgetw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtgetw+TMK_IOC0);
+	static final int  TMK_IOCmtgetsw  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtgetsw+TMK_IOC0);
+	static final int  TMK_IOCmtputblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_mtputblk+TMK_IOC0, 16);
+	static final int  TMK_IOCmtgetblk  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_mtgetblk+TMK_IOC0, 16);
+	static final int  TMK_IOCmtstartx  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtstartx+TMK_IOC0);
+	static final int  TMK_IOCmtdeflink  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtdeflink+TMK_IOC0);
+	static final int  TMK_IOCmtgetlink  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_mtgetlink+TMK_IOC0, 4);
+	static final int  TMK_IOCmtstop  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtstop+TMK_IOC0);
+	static final int  TMK_IOCmtgetstate  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_mtgetstate+TMK_IOC0, 4);
+	
+	static final int  TMK_IOCtmkgetinfo  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetinfo+TMK_IOC0, 22);
+
+	static final int  TMK_IOCrtenable  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtenable+TMK_IOC0);
+
+	static final int  TMK_IOCmrtgetmaxn  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetmaxn+TMK_IOC0);
+	static final int  TMK_IOCmrtconfig  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtconfig+TMK_IOC0);
+	static final int  TMK_IOCmrtselected  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtselected+TMK_IOC0);
+	static final int  TMK_IOCmrtgetstate  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetstate+TMK_IOC0);
+	static final int  TMK_IOCmrtdefbrcsubaddr0  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtdefbrcsubaddr0+TMK_IOC0);
+	static final int  TMK_IOCmrtreset  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtreset+TMK_IOC0);
+
+	static final int  TMK_IOCtmktimer  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmktimer+TMK_IOC0);
+	static final int  TMK_IOCtmkgettimer  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgettimer+TMK_IOC0, 4);
+	static final int  TMK_IOCtmkgettimerl  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgettimerl+TMK_IOC0);
+	static final int  TMK_IOCbcgetmsgtime  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_bcgetmsgtime+TMK_IOC0, 4);
+	static final int  TMK_IOCmtgetmsgtime  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_mtgetmsgtime+TMK_IOC0, 4);
+	static final int  TMK_IOCrtgetmsgtime  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_rtgetmsgtime+TMK_IOC0, 4);
+
+	static final int  TMK_IOCtmkgethwver  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgethwver+TMK_IOC0);
+
+	static final int  TMK_IOCtmkgetevtime  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetevtime+TMK_IOC0, 4);
+	static final int  TMK_IOCtmkswtimer  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkswtimer+TMK_IOC0);
+	static final int  TMK_IOCtmkgetswtimer  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetswtimer+TMK_IOC0, 4);
+
+	static final int  TMK_IOCtmktimeout  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmktimeout+TMK_IOC0);
+
+	static final int  TMK_IOCmrtdefbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtdefbrcpage+TMK_IOC0);
+	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
+	
+	private class union extends Union
+	{
+		class __bc extends Structure
+	    {
+	      short wResult;
+	      short wAW1;
+	      short wAW2;
+	    }
+	    
+	    class __bcx extends Structure
+	    {
+	      short wBase;
+	      short wResultX;
+	    }
+	    
+	    class __rt  extends Structure
+	    {
+	      short wStatus;
+	      short wCmd;
+	    }
+
+	    class __mt  extends Structure
+	    {
+	      short wBase;
+	      short wResultX;
+	    };
+	    
+	    class __mrt  extends Structure
+	    {
+	      short wStatus;
+	    };
+	    
+	    class __tmk  extends Structure
+	    {
+	      short wRequest;
+	    };
+	    
+	    __bc bc;
+	    __bcx bcx;
+	    __rt rt;
+	    __mt mt;
+	    __mrt mrt;
+	    __tmk tmk;
+	}
+	
+	public class __TTmkConfigData extends Structure
+	{
+		 short nType;
+		 byte[] szName = new byte[10];
+		 short wPorts1;
+		 short wPorts2;
+		 short wIrq1;
+		 short wIrq2;
+		 short wIODelay;
+	}
+	
+	public class __TTmkEventData extends Structure
+	{
+		int nInt;
+		short wMode;
+		
+		union un;
+	}
 	
     int TmkOpen()
     {
         int _VTMK4Arg;
         int ErrorCode;
 
-		if (_hVTMK4VxD!=0)
+		if (_hVTMK4VxD != 0)
 			return 0;
 
         _hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
@@ -382,12 +565,157 @@ public class Elcus1553Device {
             _hVTMK4VxD = 0;
             return ErrorCode;
         }
-        if ( (_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+        if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
         {
         	 CLibrary.INSTANCE.close(_hVTMK4VxD);
             _hVTMK4VxD = 0;
             return VTMK_BAD_VERSION;
         }
         return 0;
+    }
+    
+    int tmkconfig(int tmkNumber)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);
+    }
+    
+    int tmkgetmaxn()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmaxn, 0);
+    }
+    
+    int tmkdone(int tmkNumber)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkdone, tmkNumber);
+    }
+    
+    int tmkselect(int tmkNumber)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);
+    }
+    
+    int tmkselected()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselected, 0);
+    }
+    
+    int tmkgetmode()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmode, 0);
+    }
+    
+    void tmksetcwbits(int tmkSetControl)
+    {
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkSetControl);
+    }
+    
+    void tmkclrcwbits(int tmkClrControl)
+    {
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkClrControl);
+    }
+    
+    int tmkgetcwbits()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetcwbits, 0);
+    }
+    
+    int tmkwaitevents(int maskEvents, int fWait)
+    {
+        int[] _VTMK4Arg = new int[2];
+        _VTMK4Arg[0] = maskEvents;
+        _VTMK4Arg[1] = fWait;
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkwaitevents, _VTMK4Arg);
+    }
+
+    void tmkgetevd(__TTmkEventData pEvD)
+    {
+        short[] _awVTMK4OutBuf = new short[6]; // !!!!!!!!
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd, _awVTMK4OutBuf);
+        pEvD->nInt = ((DWORD*)(_awVTMK4OutBuf))[0];
+        switch (pEvD->wMode = _awVTMK4OutBuf[2])
+        {
+        case BC_MODE:
+            switch (pEvD->nInt)
+            {
+            case 1:
+                pEvD->bc.wResult = _awVTMK4OutBuf[3];
+                break;
+            case 2:
+                pEvD->bc.wResult = _awVTMK4OutBuf[3];
+                pEvD->bc.wAW1 = _awVTMK4OutBuf[4];
+                pEvD->bc.wAW2 = _awVTMK4OutBuf[5];
+                break;
+            case 3:
+                pEvD->bcx.wResultX = _awVTMK4OutBuf[3];
+                pEvD->bcx.wBase = _awVTMK4OutBuf[4];
+                break;
+            case 4:
+                pEvD->bcx.wBase = _awVTMK4OutBuf[3];
+                break;
+            }
+            break;
+        case MT_MODE:
+            switch (pEvD->nInt)
+            {
+            case 3:
+                pEvD->mt.wResultX = _awVTMK4OutBuf[3];
+                pEvD->mt.wBase = _awVTMK4OutBuf[4];
+                break;
+            case 4:
+                pEvD->mt.wBase = _awVTMK4OutBuf[3];
+                break;
+            }
+            break;
+        case RT_MODE:
+            switch (pEvD->nInt)
+            {
+            case 1:
+                pEvD->rt.wCmd = _awVTMK4OutBuf[3];
+                break;
+            case 2:
+            case 3:
+                pEvD->rt.wStatus = _awVTMK4OutBuf[3];
+                break;
+            }
+            break;
+        case MRT_MODE:
+            pEvD->mrt.wStatus = _awVTMK4OutBuf[3];
+            break;
+        case UNDEFINED_MODE:
+            pEvD->tmk.wRequest = _awVTMK4OutBuf[3];
+            break;
+        }
+    }
+    
+    void tmkgetinfo(TTmkConfigData *pConfD)
+    {
+    	ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD);
+    }
+
+    int bcreset(void)
+    {
+        return (
+#ifdef USE_TMK_ERROR
+                   tmkError =
+#endif
+                       ioctl(_hVTMK4VxD, TMK_IOCbcreset));
+    }
+
+
+    int bcdefirqmode(TMK_DATA bcIrqMode)
+    {
+        return (
+#ifdef USE_TMK_ERROR
+                   tmkError =
+#endif
+                       ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode));
+    }
+
+    TMK_DATA_RET bcgetirqmode(void)
+    {
+#ifdef USE_TMK_ERROR
+        tmkError = 0;
+#endif
+        return (ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode));
     }
 }
