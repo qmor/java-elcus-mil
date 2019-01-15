@@ -4,7 +4,7 @@ import com.sun.jna.Structure;
 import com.sun.jna.Union;
 
 /**
- * Порт C++ класса для работы с платами (PCI, PCI-E) МКО от Элкус
+ * пїЅпїЅпїЅпїЅ C++ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (PCI, PCI-E) пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
  * @author qmor
  *
  */
@@ -642,6 +642,7 @@ public class Elcus1553Device {
         short[] _awVTMK4OutBuf = new short[6]; // !!!!!!!!
         CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd, _awVTMK4OutBuf);
         pEvD->nInt = ((DWORD*)(_awVTMK4OutBuf))[0];
+        
         switch (pEvD->wMode = _awVTMK4OutBuf[2])
         {
         case BC_MODE:
@@ -697,35 +698,220 @@ public class Elcus1553Device {
         }
     }
     
-    void tmkgetinfo(TTmkConfigData *pConfD)
+    void tmkgetinfo(TTmkConfigData pConfD)
     {
-    	ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD);
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD);
     }
 
-    int bcreset(void)
+    int bcreset()
     {
-        return (
-#ifdef USE_TMK_ERROR
-                   tmkError =
-#endif
-                       ioctl(_hVTMK4VxD, TMK_IOCbcreset));
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcreset, 0);
     }
 
 
-    int bcdefirqmode(TMK_DATA bcIrqMode)
+    int bcdefirqmode(int bcIrqMode)
     {
-        return (
-#ifdef USE_TMK_ERROR
-                   tmkError =
-#endif
-                       ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode));
+        return CLibrary.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
     }
 
-    TMK_DATA_RET bcgetirqmode(void)
+    int bcgetirqmode()
     {
-#ifdef USE_TMK_ERROR
-        tmkError = 0;
-#endif
-        return (ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode));
+        return CLibrary.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
     }
+    
+    int bcgetmaxbase()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetmaxbase, 0);
+    }
+
+    int bcdefbase(int bcBasePC)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbase, bcBasePC);
+    }
+
+    int bcgetbase()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbase, 0);
+    }
+    
+    void bcputw(int bcAddr, int bcData)
+    {
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputw, bcAddr | (bcData << 16));
+    }
+
+    int bcgetw(int bcAddr)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetw, bcAddr);
+    }
+
+    int bcgetansw(int bcCtrlCode)
+    {
+        int _VTMK4Arg;
+        _VTMK4Arg = bcCtrlCode;
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetansw, _VTMK4Arg);
+        return _VTMK4Arg;
+    }
+    							
+    void bcputblk(int bcAddr, /*!!!*/void *pcBuffer, TMK_DATA cwLength)
+    {
+        long[] _VTMK4Arg = new long[2];
+
+        /*!!!*/ *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);
+        
+        _VTMK4Arg[1] = (long) pcBuffer;
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk, _VTMK4Arg);
+    }
+
+    void bcgetblk(int bcAddr, /*!!!*/void *pcBuffer, int cwLength)
+    {
+        /*ulong*/long[] _VTMK4Arg = new long[2];
+
+        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);
+        
+        _VTMK4Arg[1] = (/*u*/long)pcBuffer;
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk, _VTMK4Arg);
+    }
+
+    int bcdefbus(int bcBus)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbus, bcBus);
+    }
+    
+    int bcgetbus()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbus, 0);
+    }
+
+    int bcstart(int bcBase, int bcCtrlCode)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstart, bcBase | (bcCtrlCode << 16));
+    }
+
+    int bcstartx(int bcBase, int bcCtrlCode)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstartx, bcBase | (bcCtrlCode << 16));
+    }
+
+    int bcdeflink(int bcBase, int bcCtrlCode)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
+    }
+    
+    int bcgetlink()  // ???????????????????????????????????????
+    {
+        int _VTMK4Arg;
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, _VTMK4Arg);
+        return _VTMK4Arg;
+    }
+
+    int bcstop()
+    {return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstop, 0);
+    }
+
+    int bcgetstate()
+    {
+        int _VTMK4Arg;
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, _VTMK4Arg);
+        return _VTMK4Arg;
+    }
+    
+    int rtreset()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtreset, 0);
+    }
+
+    int rtdefirqmode(int rtIrqMode)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefirqmode, rtIrqMode);
+    }
+
+    int rtgetirqmode()
+    {return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode);
+    }
+
+    int rtdefmode(int rtMode)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefmode, rtMode);
+    }
+
+    int rtgetmode()
+    {
+    	return ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
+    }
+
+    int rtgetmaxpage()
+    {
+    	return ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
+    }
+
+    int rtdefpage(int rtPage)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpage, rtPage);
+    }
+    
+    int rtgetpage()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpage, 0);
+    }
+
+    int rtdefpagepc(int rtPagePC)
+    {
+        return ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
+    }
+
+    int rtdefpagebus(int rtPageBus)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagebus, rtPageBus);
+    }
+
+    int rtgetpagepc()
+    {
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagepc, 0);
+    }
+    
+    int rtgetpagebus()
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagebus, 0);
+    }
+
+    int rtdefaddress(int rtAddress)
+    {
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefaddress, rtAddress);
+    }
+
+    int rtgetaddress()
+    {
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetaddress, 0);
+    }
+
+    void rtdefsubaddr(int rtDir, int rtSubAddr)
+    {
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefsubaddr, rtDir | (rtSubAddr << 16));
+    }
+
+    int rtgetsubaddr()
+    {
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetsubaddr, 0);
+    }
+
+    void rtputw(int rtAddr, int rtData)
+    {
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputw, rtAddr | (rtData << 16));
+    }
+
+    int rtgetw(int rtAddr)
+    {
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
+    }
+
+    void rtputblk(int rtAddr, /*!*/void *pcBuffer, TMK_DATA cwLength)
+    {
+        /*u*/long _VTMK4Arg = new long[2];
+
+        *((DWORD*)_VTMK4Arg) = (DWORD)rtAddr | ((DWORD)cwLength << 16);
+        _VTMK4Arg[1] = (ULONG)pcBuffer;
+        
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, _VTMK4Arg);
+    }
+    
 }
