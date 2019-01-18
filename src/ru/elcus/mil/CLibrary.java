@@ -7,6 +7,7 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 
 public class CLibrary {
@@ -25,15 +26,17 @@ public class CLibrary {
 
 		int ioctl(int fd, int cmd, int p);
 		
+		int ioctl(int fd, int cmd, Pointer p);
+		
 		int ioctl(int fd, int cmd, int[] p);
 
 		int ioctl(int fd, int cmd, byte[] p);
 
-		int poll(pollfd[] fds, int nfds, int timeout);
+		//int poll(pollfd[] fds, int nfds, int timeout);
 
 		public int pipe(int[] fds);
 	}
-
+/*
 	static public class pollfd extends Structure {
 
 		public static class ByReference extends pollfd implements Structure.ByReference {
@@ -61,7 +64,7 @@ public class CLibrary {
 			this.revents = revents;
 		}
 	}
-
+*/
 	public static int open(String pathname, int flags) {
 		return INSTANCE.open(pathname, flags);
 	}
@@ -87,9 +90,9 @@ public class CLibrary {
 		return INSTANCE.write(fd, buffer, new NativeLong(len));
 	}
 
-	public static int poll(pollfd fds[], int nfds, int timeout) {
-		return INSTANCE.poll(fds, nfds, timeout);
-	}
+	//public static int poll(pollfd fds[], int nfds, int timeout) {
+	//	return INSTANCE.poll(fds, nfds, timeout);
+	//}
 
 	public static int pipe(int[] fds) {
 		return INSTANCE.pipe(fds);

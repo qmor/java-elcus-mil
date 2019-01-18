@@ -1,10 +1,13 @@
 package ru.elcus.mil;
 
+import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
-
+import com.sun.jna.ptr.ShortByReference;
+import java.nio.ByteBuffer;
+import ru.elcus.mil.structs.*;
 /**
- * пїЅпїЅпїЅпїЅ C++ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (PCI, PCI-E) пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+ * working with elcus mil1553 cards
  * @author qmor
  *
  */
@@ -496,69 +499,9 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 	
-	private class union extends Union
-	{
-		class __bc extends Structure
-	    {
-	      short wResult;
-	      short wAW1;
-	      short wAW2;
-	    }
-	    
-	    class __bcx extends Structure
-	    {
-	      short wBase;
-	      short wResultX;
-	    }
-	    
-	    class __rt  extends Structure
-	    {
-	      short wStatus;
-	      short wCmd;
-	    }
+	
+	
 
-	    class __mt  extends Structure
-	    {
-	      short wBase;
-	      short wResultX;
-	    };
-	    
-	    class __mrt  extends Structure
-	    {
-	      short wStatus;
-	    };
-	    
-	    class __tmk  extends Structure
-	    {
-	      short wRequest;
-	    };
-	    
-	    __bc bc;
-	    __bcx bcx;
-	    __rt rt;
-	    __mt mt;
-	    __mrt mrt;
-	    __tmk tmk;
-	}
-	
-	public class __TTmkConfigData extends Structure
-	{
-		 short nType;
-		 byte[] szName = new byte[10];
-		 short wPorts1;
-		 short wPorts2;
-		 short wIrq1;
-		 short wIrq2;
-		 short wIODelay;
-	}
-	
-	public class __TTmkEventData extends Structure
-	{
-		int nInt;
-		short wMode;
-		
-		union un;
-	}
 	
     int TmkOpen()
     {
@@ -637,70 +580,78 @@ public class Elcus1553Device {
         return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkwaitevents, _VTMK4Arg);
     }
 
-    void tmkgetevd(__TTmkEventData pEvD)
-    {
-        short[] _awVTMK4OutBuf = new short[6]; // !!!!!!!!
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd, _awVTMK4OutBuf);
-        pEvD->nInt = ((DWORD*)(_awVTMK4OutBuf))[0];
-        
-        switch (pEvD->wMode = _awVTMK4OutBuf[2])
+    void tmkgetevd(TTmkEventData pEvD)
+    {   
+    	class CC extends Structure
+    	{
+    		short[] _awVTMK4OutBuf = new short[6]; 
+    	}
+    	CC cc = new CC();
+    	cc.getPointer();
+        //short[] _awVTMK4OutBuf = new short[6]; // !!!!!!!!
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd, cc.getPointer());
+        //pEvD->nInt = ((DWORD*)(_awVTMK4OutBuf))[0];
+        ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
+        pEvD.nInt = bb.getInt();
+        pEvD.wMode = bb.getShort();
+        switch (pEvD.wMode&0xffff)
         {
         case BC_MODE:
-            switch (pEvD->nInt)
+            switch (pEvD.nInt)
             {
             case 1:
-                pEvD->bc.wResult = _awVTMK4OutBuf[3];
+                pEvD.union.bc.wResult = bb.getShort();
                 break;
             case 2:
-                pEvD->bc.wResult = _awVTMK4OutBuf[3];
-                pEvD->bc.wAW1 = _awVTMK4OutBuf[4];
-                pEvD->bc.wAW2 = _awVTMK4OutBuf[5];
+                pEvD.union.bc.wResult = bb.getShort();
+                pEvD.union.bc.wAW1 = bb.getShort();
+                pEvD.union.bc.wAW2 = bb.getShort();
                 break;
             case 3:
-                pEvD->bcx.wResultX = _awVTMK4OutBuf[3];
-                pEvD->bcx.wBase = _awVTMK4OutBuf[4];
+                pEvD.union.bcx.wResultX = bb.getShort();
+                pEvD.union.bcx.wBase = bb.getShort();
                 break;
             case 4:
-                pEvD->bcx.wBase = _awVTMK4OutBuf[3];
+                pEvD.union.bcx.wBase = bb.getShort();
                 break;
             }
             break;
         case MT_MODE:
-            switch (pEvD->nInt)
+            switch (pEvD.nInt)
             {
             case 3:
-                pEvD->mt.wResultX = _awVTMK4OutBuf[3];
-                pEvD->mt.wBase = _awVTMK4OutBuf[4];
+                pEvD.union.mt.wResultX = bb.getShort();
+                pEvD.union.mt.wBase = bb.getShort();
                 break;
             case 4:
-                pEvD->mt.wBase = _awVTMK4OutBuf[3];
+                pEvD.union.mt.wBase = bb.getShort();
                 break;
             }
             break;
         case RT_MODE:
-            switch (pEvD->nInt)
+            switch (pEvD.nInt)
             {
             case 1:
-                pEvD->rt.wCmd = _awVTMK4OutBuf[3];
+                pEvD.union.rt.wCmd = bb.getShort();
                 break;
             case 2:
             case 3:
-                pEvD->rt.wStatus = _awVTMK4OutBuf[3];
+                pEvD.union.rt.wStatus = bb.getShort();
                 break;
             }
             break;
         case MRT_MODE:
-            pEvD->mrt.wStatus = _awVTMK4OutBuf[3];
+            pEvD.union.mrt.wStatus = bb.getShort();
             break;
         case UNDEFINED_MODE:
-            pEvD->tmk.wRequest = _awVTMK4OutBuf[3];
+            pEvD.union.tmk.wRequest = bb.getShort();
             break;
         }
     }
     
     void tmkgetinfo(TTmkConfigData pConfD)
     {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD);
+    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD.getPointer());
     }
 
     int bcreset()
@@ -711,12 +662,12 @@ public class Elcus1553Device {
 
     int bcdefirqmode(int bcIrqMode)
     {
-        return CLibrary.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
     }
 
     int bcgetirqmode()
     {
-        return CLibrary.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
     }
     
     int bcgetmaxbase()
@@ -752,24 +703,33 @@ public class Elcus1553Device {
         return _VTMK4Arg;
     }
     							
-    void bcputblk(int bcAddr, /*!!!*/void *pcBuffer, TMK_DATA cwLength)
+    void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
     {
+    	class C extends Structure 
+    	{
         long[] _VTMK4Arg = new long[2];
-
-        /*!!!*/ *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);
+    	}
+    	C c = new C();
+    	/*
+        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16); //TODO: доработать
         
         _VTMK4Arg[1] = (long) pcBuffer;
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk, _VTMK4Arg);
+        */
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk, c.getPointer());
     }
 
-    void bcgetblk(int bcAddr, /*!!!*/void *pcBuffer, int cwLength)
+    void bcgetblk(int bcAddr, Pointer pcBuffer, int cwLength)
     {
-        /*ulong*/long[] _VTMK4Arg = new long[2];
-
-        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);
+    	class C extends Structure 
+    	{
+        long[] _VTMK4Arg = new long[2];
+    	}
+/*
+        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);//TODO:доработать
         
-        _VTMK4Arg[1] = (/*u*/long)pcBuffer;
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk, _VTMK4Arg);
+        _VTMK4Arg[1] = (long)pcBuffer;*/
+    	C c = new C();
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk, c.getPointer());
     }
 
     int bcdefbus(int bcBus)
@@ -797,11 +757,15 @@ public class Elcus1553Device {
         return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
     }
     
-    int bcgetlink()  // ???????????????????????????????????????
+    int bcgetlink() 
     {
+    	class C extends Structure
+    	{
         int _VTMK4Arg;
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, _VTMK4Arg);
-        return _VTMK4Arg;
+    	}
+    	C c = new C();
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, c.getPointer());
+        return c._VTMK4Arg;
     }
 
     int bcstop()
@@ -810,9 +774,13 @@ public class Elcus1553Device {
 
     int bcgetstate()
     {
+    	class C extends Structure
+    	{
         int _VTMK4Arg;
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, _VTMK4Arg);
-        return _VTMK4Arg;
+    	}
+    	C c = new C();
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, c.getPointer());
+        return c._VTMK4Arg;
     }
     
     int rtreset()
@@ -826,7 +794,8 @@ public class Elcus1553Device {
     }
 
     int rtgetirqmode()
-    {return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode);
+    {
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode,0);
     }
 
     int rtdefmode(int rtMode)
@@ -836,12 +805,12 @@ public class Elcus1553Device {
 
     int rtgetmode()
     {
-    	return ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
     }
 
     int rtgetmaxpage()
     {
-    	return ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
+    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
     }
 
     int rtdefpage(int rtPage)
@@ -856,7 +825,7 @@ public class Elcus1553Device {
 
     int rtdefpagepc(int rtPagePC)
     {
-        return ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
+        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
     }
 
     int rtdefpagebus(int rtPageBus)
@@ -904,14 +873,17 @@ public class Elcus1553Device {
     	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
     }
 
-    void rtputblk(int rtAddr, /*!*/void *pcBuffer, TMK_DATA cwLength)
+    void rtputblk(int rtAddr, Pointer pcBuffer, short cwLength)
     {
-        /*u*/long _VTMK4Arg = new long[2];
-
-        *((DWORD*)_VTMK4Arg) = (DWORD)rtAddr | ((DWORD)cwLength << 16);
-        _VTMK4Arg[1] = (ULONG)pcBuffer;
+        class CC extends Structure
+        {
+    	long[] _VTMK4Arg = new long[2];
+        }
+        CC cc = new CC();
+        //*((DWORD*)_VTMK4Arg) = (DWORD)rtAddr | ((DWORD)cwLength << 16);//TODO доработать
+        //_VTMK4Arg[1] = (ULONG)pcBuffer;
         
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, _VTMK4Arg);
+        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, cc.getPointer());
     }
     
 }
