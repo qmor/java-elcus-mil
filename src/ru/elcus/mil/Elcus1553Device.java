@@ -1,10 +1,17 @@
 package ru.elcus.mil;
 
+import com.sun.jna.Memory;
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
 import com.sun.jna.ptr.ShortByReference;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.Assert;
+
 import ru.elcus.mil.structs.*;
 /**
  * working with elcus mil1553 cards
@@ -12,8 +19,8 @@ import ru.elcus.mil.structs.*;
  *
  */
 public class Elcus1553Device {
-	
-	
+
+
 
 	static final int TMK_VERSION_MIN =0x0403; /* v4.03 */
 	static final int TMK_VERSION =0x0406 ;    /* v4.06 */
@@ -138,8 +145,8 @@ public class Elcus1553Device {
 	static final int RT_FLAG_MODE =0x0002;
 	static final int RT_BRCST_MODE =0x0004;
 	static final int RT_DATA_BL =0x2000;
-	static final int RT_GENER1_BL =0x0004;
-	static final int RT_GENER2_BL =0x4000;
+	public static final int RT_GENER1_BL =0x0004;
+	public static final int RT_GENER2_BL =0x4000;
 	static final int BC_GENER1_BL =0x0004;
 	static final int BC_GENER2_BL =0x4000;
 	static final int MT_GENER1_BL =0x0004;
@@ -152,16 +159,16 @@ public class Elcus1553Device {
 	static final int CX_SIG_MASK =0x8000;
 	static final int CX_INT_MASK =0x0020;
 
-	static final int CX_CONT =0x0010;
+	public static final int CX_CONT =0x0010;
 	static final int CX_STOP =0x0000;
 	static final int CX_BUS_0 =0x0000;
 	static final int CX_BUS_A =0x0000;
 	static final int CX_BUS_1 =0x0020;
 	static final int CX_BUS_B =0x0020;
 	static final int CX_NOSIG =0x0000;
-	static final int CX_SIG =0x8000;
-	static final int CX_INT =0x0000;
-	static final int CX_NOINT =0x0020;
+	public static final int CX_SIG =0x8000;
+	public static final int CX_INT =0x0000;
+	public static final int CX_NOINT =0x0020;
 
 	static final int SX_NOERR =0;
 	static final int SX_MEO =1;
@@ -236,10 +243,10 @@ public class Elcus1553Device {
 	static final int BC_BAD_FUNC      =(TMK_BAD_0-11);
 	static final int TMK_BAD_FUNC     =(TMK_BAD_0-12);
 	static final int VTMK_BAD_VERSION =(TMK_BAD_0-13);
-	
-	
-	
-	
+
+
+
+
 	static final int TMK_IOC_MAGIC  ='k';
 	static final int TMK_IOC0 =0;
 
@@ -364,7 +371,7 @@ public class Elcus1553Device {
 	static final int TMK_IOC_MAXNR =106;
 	static final int  TMK_IOCGetVersion = ioctl._IO(TMK_IOC_MAGIC, VTMK_GetVersion+TMK_IOC0);
 	static final int TMK_IOCmrtdefbrcpage = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtdefbrcpage+TMK_IOC0);
-	
+
 	/*#define mtdefirqmode bcdefirqmode
 	#define mtgetirqmode bcgetirqmode
 	#define mtgetmaxbase bcgetmaxbase
@@ -380,9 +387,9 @@ public class Elcus1553Device {
 	#define mtstop bcstop
 	#define mtgetstate bcgetstate
 	#define mtgetmsgtime bcgetmsgtime*/
-	
+
 	static int _hVTMK4VxD = 0;
-	
+
 	static final int  TMK_IOCtmkconfig = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkconfig+TMK_IOC0);
 	static final int  TMK_IOCtmkdone = ioctl. _IO(TMK_IOC_MAGIC, VTMK_tmkdone+TMK_IOC0);
 	static final int  TMK_IOCtmkgetmaxn  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgetmaxn+TMK_IOC0);
@@ -393,7 +400,7 @@ public class Elcus1553Device {
 	static final int  TMK_IOCtmkclrcwbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkclrcwbits+TMK_IOC0);
 	static final int  TMK_IOCtmkgetcwbits  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmkgetcwbits+TMK_IOC0);
 	static final int  TMK_IOCtmkwaitevents  = ioctl._IOW(TMK_IOC_MAGIC, VTMK_tmkwaitevents+TMK_IOC0, 8);
-	
+
 	static final int  TMK_IOCtmkgetevd  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetevd+TMK_IOC0, 22);
 
 	static final int  TMK_IOCbcreset  = ioctl._IO(TMK_IOC_MAGIC, VTMK_bcreset+TMK_IOC0);
@@ -470,7 +477,7 @@ public class Elcus1553Device {
 	static final int  TMK_IOCmtgetlink  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_mtgetlink+TMK_IOC0, 4);
 	static final int  TMK_IOCmtstop  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mtstop+TMK_IOC0);
 	static final int  TMK_IOCmtgetstate  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_mtgetstate+TMK_IOC0, 4);
-	
+
 	static final int  TMK_IOCtmkgetinfo  = ioctl._IOR(TMK_IOC_MAGIC, VTMK_tmkgetinfo+TMK_IOC0, 22);
 
 	static final int  TMK_IOCrtenable  = ioctl._IO(TMK_IOC_MAGIC, VTMK_rtenable+TMK_IOC0);
@@ -498,392 +505,527 @@ public class Elcus1553Device {
 	static final int  TMK_IOCtmktimeout  = ioctl._IO(TMK_IOC_MAGIC, VTMK_tmktimeout+TMK_IOC0);
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
-	
-	
-	
 
-	
-    int TmkOpen()
-    {
-        int _VTMK4Arg;
-        int ErrorCode;
+
+	private Thread runnerThread;
+
+	private boolean threadRunning = false;
+	private int cardNumber = 0;
+	private boolean initiliased = false;
+	private static Object syncObject = new Object();
+	private int mtMaxBase;
+	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
+	public void initAsMT() throws Eclus1553Exception
+	{
+		synchronized (syncObject) {
+			if (initiliased)
+				return;
+			int result =TmkOpen();
+			if (result!=0)
+				throw new Eclus1553Exception("РћС€РёР±РєР° TmkOpen "+result);
+
+			result = tmkconfig();
+			result =tmkselect();
+			result = mtreset();
+
+			result|=mtdefirqmode(Elcus1553Device.RT_GENER1_BL|Elcus1553Device.RT_GENER2_BL);
+			Assert.assertEquals(0, result);
+
+			mtMaxBase = mtgetmaxbase();
+			short i=0;
+			for (i = 0; i < mtMaxBase; ++i)
+			{
+				mtdefbase(i);
+				mtdeflink((i + 1), (Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG));
+			}
+			mtdefbase(i);
+			mtdeflink(0, Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG);
+			mtstop();
+			workMode = MilWorkMode.eMilWorkModeMT;
+		}
+		runnerThread = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				int events = 0;
+				int waitingtime = 10;
+				int mtLastBase = 0;
+				int result=0;
+				TTmkEventData eventData = new TTmkEventData();
+				int sw;
+				Pointer pBuffer = new Memory(64*2);
+				while (threadRunning)
+				{
+					events = tmkwaitevents(1 << cardNumber, waitingtime);
+					if (events == (1 << cardNumber))
+					{
+						synchronized (syncObject) {
+							tmkselect();
+							tmkgetevd(eventData);
+							
+							
+							  if (eventData.nInt == 3)
+								{
+								}
+								else if (eventData.nInt == 4)
+								{
+
+				                    while (mtLastBase != eventData.union.mt.wBase)
+				                    {
+				                        result = mtdefbase(mtLastBase);
+				                        
+				                        sw = mtgetsw();
+				                        int statusword = eventData.union.mt.wResultX;
+				                        
+				                        mtgetblk(0, pBuffer, 64);
+				                        short[] buffer = pBuffer.getShortArray(0,64); 
+				                        
+				                        buffer[63] = (short)(statusword&0xff);
+				                        buffer[58] = (short)sw;
+				                        System.out.println(String.format("%04X", buffer[0]));
+										//if (callback)
+										//{
+										//	info.data = QByteArray((const char *)buffer,64*2);
+										//	callback(info);
+										//}
+				                        ++mtLastBase;
+				                        if (mtLastBase > mtMaxBase)
+				                            mtLastBase = 0;
+
+				                    }
+								}
+							
+							
+						}
+					}
+				}
+
+			}
+			
+		});
+		threadRunning = true;
+		runnerThread.start();
+		mtstartx(0, (CX_CONT | CX_NOINT | CX_NOSIG));
+
+	}
+
+	public Elcus1553Device(int cardNumber)
+	{
+		this.cardNumber = cardNumber;
+	}
+	int TmkOpen()
+	{
+		int _VTMK4Arg;
+		int ErrorCode;
 
 		if (_hVTMK4VxD != 0)
 			return 0;
 
-        _hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
-        if (_hVTMK4VxD < 0)
-        {
-            ErrorCode = _hVTMK4VxD;
-            _hVTMK4VxD = 0;
-            return ErrorCode;
-        }
-        if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
-        {
-        	 CLibrary.INSTANCE.close(_hVTMK4VxD);
-            _hVTMK4VxD = 0;
-            return VTMK_BAD_VERSION;
-        }
-        return 0;
-    }
-    
-    int tmkconfig(int tmkNumber)
+		_hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
+		if (_hVTMK4VxD < 0)
+		{
+			ErrorCode = _hVTMK4VxD;
+			_hVTMK4VxD = 0;
+			return ErrorCode;
+		}
+		if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+		{
+			CLibrary.INSTANCE.close(_hVTMK4VxD);
+			_hVTMK4VxD = 0;
+			return VTMK_BAD_VERSION;
+		}
+		return 0;
+	}
+    int mtgetsw()
     {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);
+        return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0));
     }
-    
-    int tmkgetmaxn()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmaxn, 0);
-    }
-    
-    int tmkdone(int tmkNumber)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkdone, tmkNumber);
-    }
-    
-    int tmkselect(int tmkNumber)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);
-    }
-    
-    int tmkselected()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselected, 0);
-    }
-    
-    int tmkgetmode()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmode, 0);
-    }
-    
-    void tmksetcwbits(int tmkSetControl)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkSetControl);
-    }
-    
-    void tmkclrcwbits(int tmkClrControl)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkClrControl);
-    }
-    
-    int tmkgetcwbits()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetcwbits, 0);
-    }
-    
-    int tmkwaitevents(int maskEvents, int fWait)
-    {
-        int[] _VTMK4Arg = new int[2];
-        _VTMK4Arg[0] = maskEvents;
-        _VTMK4Arg[1] = fWait;
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkwaitevents, _VTMK4Arg);
-    }
+	int tmkconfig()
+	{
+		return tmkconfig(cardNumber);
+	}
+	private int tmkconfig(int tmkNumber)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);
+	}
 
-    void tmkgetevd(TTmkEventData pEvD)
-    {   
-    	class CC extends Structure
-    	{
-    		short[] _awVTMK4OutBuf = new short[6]; 
-    	}
-    	CC cc = new CC();
-    	cc.getPointer();
-        //short[] _awVTMK4OutBuf = new short[6]; // !!!!!!!!
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd, cc.getPointer());
-        //pEvD->nInt = ((DWORD*)(_awVTMK4OutBuf))[0];
-        ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
-        pEvD.nInt = bb.getInt();
-        pEvD.wMode = bb.getShort();
-        switch (pEvD.wMode&0xffff)
-        {
-        case BC_MODE:
-            switch (pEvD.nInt)
-            {
-            case 1:
-                pEvD.union.bc.wResult = bb.getShort();
-                break;
-            case 2:
-                pEvD.union.bc.wResult = bb.getShort();
-                pEvD.union.bc.wAW1 = bb.getShort();
-                pEvD.union.bc.wAW2 = bb.getShort();
-                break;
-            case 3:
-                pEvD.union.bcx.wResultX = bb.getShort();
-                pEvD.union.bcx.wBase = bb.getShort();
-                break;
-            case 4:
-                pEvD.union.bcx.wBase = bb.getShort();
-                break;
-            }
-            break;
-        case MT_MODE:
-            switch (pEvD.nInt)
-            {
-            case 3:
-                pEvD.union.mt.wResultX = bb.getShort();
-                pEvD.union.mt.wBase = bb.getShort();
-                break;
-            case 4:
-                pEvD.union.mt.wBase = bb.getShort();
-                break;
-            }
-            break;
-        case RT_MODE:
-            switch (pEvD.nInt)
-            {
-            case 1:
-                pEvD.union.rt.wCmd = bb.getShort();
-                break;
-            case 2:
-            case 3:
-                pEvD.union.rt.wStatus = bb.getShort();
-                break;
-            }
-            break;
-        case MRT_MODE:
-            pEvD.union.mrt.wStatus = bb.getShort();
-            break;
-        case UNDEFINED_MODE:
-            pEvD.union.tmk.wRequest = bb.getShort();
-            break;
-        }
-    }
-    
-    void tmkgetinfo(TTmkConfigData pConfD)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD.getPointer());
-    }
+	int tmkgetmaxn()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmaxn, 0);
+	}
 
-    int bcreset()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcreset, 0);
-    }
+	int tmkdone()
+	{
+		return tmkdone(cardNumber);
+	}
+	private int tmkdone(int tmkNumber)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkdone, tmkNumber);
+	}
 
+	int tmkselect()
+	{
+		return tmkselect(cardNumber);
+	}
+	private int tmkselect(int tmkNumber)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);
+	}
 
-    int bcdefirqmode(int bcIrqMode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
-    }
+	int tmkselected()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselected, 0);
+	}
 
-    int bcgetirqmode()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
-    }
-    
-    int bcgetmaxbase()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetmaxbase, 0);
-    }
+	int tmkgetmode()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmode, 0);
+	}
 
-    int bcdefbase(int bcBasePC)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbase, bcBasePC);
-    }
+	void tmksetcwbits(int tmkSetControl)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkSetControl);
+	}
 
-    int bcgetbase()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbase, 0);
-    }
-    
-    void bcputw(int bcAddr, int bcData)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputw, bcAddr | (bcData << 16));
-    }
+	void tmkclrcwbits(int tmkClrControl)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkClrControl);
+	}
 
-    int bcgetw(int bcAddr)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetw, bcAddr);
-    }
+	int tmkgetcwbits()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetcwbits, 0);
+	}
 
-    int bcgetansw(int bcCtrlCode)
-    {
-        int _VTMK4Arg;
-        _VTMK4Arg = bcCtrlCode;
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetansw, _VTMK4Arg);
-        return _VTMK4Arg;
-    }
-    							
-    void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
-    {
-    	class C extends Structure 
-    	{
-        long[] _VTMK4Arg = new long[2];
-    	}
-    	C c = new C();
-    	/*
-        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16); //TODO: доработать
-        
-        _VTMK4Arg[1] = (long) pcBuffer;
-        */
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk, c.getPointer());
-    }
+	int tmkwaitevents(int maskEvents, int fWait)
+	{
+		int[] _VTMK4Arg = new int[2];
+		_VTMK4Arg[0] = maskEvents;
+		_VTMK4Arg[1] = fWait;
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkwaitevents, _VTMK4Arg);
+	}
 
-    void bcgetblk(int bcAddr, Pointer pcBuffer, int cwLength)
-    {
-    	class C extends Structure 
-    	{
-        long[] _VTMK4Arg = new long[2];
-    	}
-/*
-        *((DWORD*)_VTMK4Arg) = (DWORD)bcAddr | ((DWORD)cwLength << 16);//TODO:доработать
-        
-        _VTMK4Arg[1] = (long)pcBuffer;*/
-    	C c = new C();
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk, c.getPointer());
-    }
+	void tmkgetevd(TTmkEventData pEvD)
+	{   
 
-    int bcdefbus(int bcBus)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbus, bcBus);
-    }
-    
-    int bcgetbus()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbus, 0);
-    }
+		CC cc = new CC();
+		
 
-    int bcstart(int bcBase, int bcCtrlCode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstart, bcBase | (bcCtrlCode << 16));
-    }
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd&0xffffffff, cc.getPointer());
+		ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
+		pEvD.nInt = bb.getInt();
+		pEvD.wMode = bb.getShort();
+		switch (pEvD.wMode&0xffff)
+		{
+		case BC_MODE:
+			switch (pEvD.nInt)
+			{
+			case 1:
+				pEvD.union.bc.wResult = bb.getShort();
+				break;
+			case 2:
+				pEvD.union.bc.wResult = bb.getShort();
+				pEvD.union.bc.wAW1 = bb.getShort();
+				pEvD.union.bc.wAW2 = bb.getShort();
+				break;
+			case 3:
+				pEvD.union.bcx.wResultX = bb.getShort();
+				pEvD.union.bcx.wBase = bb.getShort();
+				break;
+			case 4:
+				pEvD.union.bcx.wBase = bb.getShort();
+				break;
+			}
+			break;
+		case MT_MODE:
+			switch (pEvD.nInt)
+			{
+			case 3:
+				pEvD.union.mt.wResultX = bb.getShort();
+				pEvD.union.mt.wBase = bb.getShort();
+				break;
+			case 4:
+				pEvD.union.mt.wBase = bb.getShort();
+				break;
+			}
+			break;
+		case RT_MODE:
+			switch (pEvD.nInt)
+			{
+			case 1:
+				pEvD.union.rt.wCmd = bb.getShort();
+				break;
+			case 2:
+			case 3:
+				pEvD.union.rt.wStatus = bb.getShort();
+				break;
+			}
+			break;
+		case MRT_MODE:
+			pEvD.union.mrt.wStatus = bb.getShort();
+			break;
+		case UNDEFINED_MODE:
+			pEvD.union.tmk.wRequest = bb.getShort();
+			break;
+		}
+	}
 
-    int bcstartx(int bcBase, int bcCtrlCode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstartx, bcBase | (bcCtrlCode << 16));
-    }
+	void tmkgetinfo(TTmkConfigData pConfD)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD.getPointer());
+	}
 
-    int bcdeflink(int bcBase, int bcCtrlCode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
-    }
-    
-    int bcgetlink() 
-    {
-    	class C extends Structure
-    	{
-        int _VTMK4Arg;
-    	}
-    	C c = new C();
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, c.getPointer());
-        return c._VTMK4Arg;
-    }
+	int bcreset()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcreset, 0);
+	}
 
-    int bcstop()
-    {return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstop, 0);
-    }
+	int mtreset()
+	{
+		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtreset,0));
+	}
 
-    int bcgetstate()
-    {
-    	class C extends Structure
-    	{
-        int _VTMK4Arg;
-    	}
-    	C c = new C();
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, c.getPointer());
-        return c._VTMK4Arg;
-    }
-    
-    int rtreset()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtreset, 0);
-    }
+	int mtdefirqmode(int mtIrqMode)
+	{
+		return bcdefirqmode(mtIrqMode);
+	}
+	int bcdefirqmode(int bcIrqMode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
+	}
 
-    int rtdefirqmode(int rtIrqMode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefirqmode, rtIrqMode);
-    }
+	int bcgetirqmode()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
+	}
 
-    int rtgetirqmode()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode,0);
-    }
+	int mtgetmaxbase()
+	{
+		return bcgetmaxbase();
+	}
+	int bcgetmaxbase()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetmaxbase, 0);
+	}
 
-    int rtdefmode(int rtMode)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefmode, rtMode);
-    }
+	int mtdefbase(int mtBasePC)
+	{
+		return bcdefbase(mtBasePC);
+	}
+	int bcdefbase(int bcBasePC)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbase&0xffffffff, bcBasePC);
+	}
 
-    int rtgetmode()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
-    }
+	int bcgetbase()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbase, 0);
+	}
 
-    int rtgetmaxpage()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
-    }
+	void bcputw(int bcAddr, int bcData)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputw, bcAddr | (bcData << 16));
+	}
 
-    int rtdefpage(int rtPage)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpage, rtPage);
-    }
-    
-    int rtgetpage()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpage, 0);
-    }
+	int bcgetw(int bcAddr)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetw, bcAddr);
+	}
 
-    int rtdefpagepc(int rtPagePC)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
-    }
+	int bcgetansw(int bcCtrlCode)
+	{
+		int _VTMK4Arg;
+		_VTMK4Arg = bcCtrlCode;
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetansw, _VTMK4Arg);
+		return _VTMK4Arg;
+	}
 
-    int rtdefpagebus(int rtPageBus)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagebus, rtPageBus);
-    }
+	void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
+	{
+		CLong2 c = new CLong2();
+		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
+		bb.putInt((bcAddr|cwLength<<16));
+		bb.putInt(0);
+		bb.putLong(Pointer.nativeValue(pcBuffer));
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk&0xffffffff, c.getPointer());
+	}
+	void mtgetblk(int mtAddr, Pointer pcBuffer, int cwLength)
+	{
+		bcgetblk(mtAddr, pcBuffer, cwLength);
+	}
+	void bcgetblk(int bcAddr, Pointer pcBuffer, int cwLength)
+	{		
+		CLong2 c = new CLong2();
+		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
+		bb.putInt((bcAddr|cwLength<<16));
+		bb.putInt(0);
+		bb.putLong(Pointer.nativeValue(pcBuffer));
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk&0xffffffff, c.getPointer());
+	}
 
-    int rtgetpagepc()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagepc, 0);
-    }
-    
-    int rtgetpagebus()
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagebus, 0);
-    }
+	int bcdefbus(int bcBus)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbus, bcBus);
+	}
 
-    int rtdefaddress(int rtAddress)
-    {
-        return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefaddress, rtAddress);
-    }
+	int bcgetbus()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbus, 0);
+	}
 
-    int rtgetaddress()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetaddress, 0);
-    }
+	int bcstart(int bcBase, int bcCtrlCode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstart, bcBase | (bcCtrlCode << 16));
+	}
 
-    void rtdefsubaddr(int rtDir, int rtSubAddr)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefsubaddr, rtDir | (rtSubAddr << 16));
-    }
+	int mtstartx(int mtBase, int mtCtrlCode)
+	{
+		return bcstartx(mtBase,mtCtrlCode);
+	}
+	int bcstartx(int bcBase, int bcCtrlCode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstartx, bcBase | (bcCtrlCode << 16));
+	}
 
-    int rtgetsubaddr()
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetsubaddr, 0);
-    }
+	int mtdeflink(int mtBase, int mtCtrlCode)
+	{
+		return bcdeflink(mtBase, mtCtrlCode);
+	}
+	int bcdeflink(int bcBase, int bcCtrlCode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
+	}
 
-    void rtputw(int rtAddr, int rtData)
-    {
-    	CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputw, rtAddr | (rtData << 16));
-    }
+	int bcgetlink() 
+	{
+		class C extends Structure
+		{
+			int _VTMK4Arg;
+		}
+		C c = new C();
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, c.getPointer());
+		return c._VTMK4Arg;
+	}
 
-    int rtgetw(int rtAddr)
-    {
-    	return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
-    }
+	int mtstop()
+	{
+		return bcstop();
+	}
+	int bcstop()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstop, 0);
+	}
 
-    void rtputblk(int rtAddr, Pointer pcBuffer, short cwLength)
-    {
-        class CC extends Structure
-        {
-    	long[] _VTMK4Arg = new long[2];
-        }
-        CC cc = new CC();
-        //*((DWORD*)_VTMK4Arg) = (DWORD)rtAddr | ((DWORD)cwLength << 16);//TODO доработать
-        //_VTMK4Arg[1] = (ULONG)pcBuffer;
-        
-        CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, cc.getPointer());
-    }
-    
+	int bcgetstate()
+	{
+		class C extends Structure
+		{
+			int _VTMK4Arg;
+		}
+		C c = new C();
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, c.getPointer());
+		return c._VTMK4Arg;
+	}
+
+	int rtreset()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtreset, 0);
+	}
+
+	int rtdefirqmode(int rtIrqMode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefirqmode, rtIrqMode);
+	}
+
+	int rtgetirqmode()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode,0);
+	}
+
+	int rtdefmode(int rtMode)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefmode, rtMode);
+	}
+
+	int rtgetmode()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
+	}
+
+	int rtgetmaxpage()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
+	}
+
+	int rtdefpage(int rtPage)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpage, rtPage);
+	}
+
+	int rtgetpage()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpage, 0);
+	}
+
+	int rtdefpagepc(int rtPagePC)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
+	}
+
+	int rtdefpagebus(int rtPageBus)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagebus, rtPageBus);
+	}
+
+	int rtgetpagepc()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagepc, 0);
+	}
+
+	int rtgetpagebus()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagebus, 0);
+	}
+
+	int rtdefaddress(int rtAddress)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefaddress, rtAddress);
+	}
+
+	int rtgetaddress()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetaddress, 0);
+	}
+
+	void rtdefsubaddr(int rtDir, int rtSubAddr)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefsubaddr, rtDir | (rtSubAddr << 16));
+	}
+
+	int rtgetsubaddr()
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetsubaddr, 0);
+	}
+
+	void rtputw(int rtAddr, int rtData)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputw, rtAddr | (rtData << 16));
+	}
+
+	int rtgetw(int rtAddr)
+	{
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
+	}
+
+	void rtputblk(int rtAddr, Pointer pcBuffer, short cwLength)
+	{
+		CLong2 c = new CLong2();
+		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
+		bb.putInt((rtAddr|cwLength<<16));
+		bb.putInt(0);
+		bb.putLong(Pointer.nativeValue(pcBuffer));
+
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+	}
+
 }
