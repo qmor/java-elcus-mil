@@ -18,6 +18,11 @@ import ru.elcus.mil.structs.*;
  * @author qmor
  *
  */
+
+
+/* Тестовое изменениие - работа с гит */
+
+
 public class Elcus1553Device {
 
 
