@@ -18,6 +18,8 @@ import ru.elcus.mil.structs.*;
  * @author qmor
  *
  */
+ 
+ // New branch
 public class Elcus1553Device {
 
 
