@@ -9,7 +9,7 @@ public class Mil1553Packet {
 	public short[] dataWords;
 	public EBus bus;
 	public EMilFormat format;
-
+	public Mil1553Packet() {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
@@ -40,19 +40,19 @@ public class Mil1553Packet {
 		}
 
 	}
-	public Integer getWordsCount(short cmdWord)
+	public static Integer getWordsCount(short cmdWord)
 	{
 		return cmdWord&0x1f;
 	}
-	public Integer getRTRBit(short cmdWord)
+	public static Integer getRTRBit(short cmdWord)
 	{
 		return (cmdWord>>10)&0x1;
 	}
-	public Integer getSubAddress(short cmdWord)
+	public static Integer getSubAddress(short cmdWord)
 	{
 		return (cmdWord>>5)&0x1f;
 	}
-	public Integer getRtAddress(short cmdWord)
+	public static Integer getRtAddress(short cmdWord)
 	{
 		return (cmdWord&0xffff)>>11;
 	}

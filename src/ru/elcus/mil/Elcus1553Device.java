@@ -1,18 +1,17 @@
 package ru.elcus.mil;
 
-import com.sun.jna.Memory;
-import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
-import com.sun.jna.Union;
-import com.sun.jna.ptr.ShortByReference;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
 
 import org.junit.Assert;
 
-import ru.elcus.mil.structs.*;
+import com.sun.jna.Memory;
+import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
+
+import ru.elcus.mil.structs.CC;
+import ru.elcus.mil.structs.CLong2;
+import ru.elcus.mil.structs.TTmkConfigData;
+import ru.elcus.mil.structs.TTmkEventData;
 /**
  * working with elcus mil1553 cards
  * @author qmor
@@ -511,109 +510,237 @@ public class Elcus1553Device {
 
 	private boolean threadRunning = false;
 	private int cardNumber = 0;
+	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
-	public void initAsMT() throws Eclus1553Exception
+	public void setPause(boolean pause) throws Eclus1553Exception
 	{
+		if (workMode==MilWorkMode.eMilWorkModeRT)
+		{
+			synchronized (syncObject) {
+				int result  = tmkselect();
+				if (result!=0)
+					throw new Eclus1553Exception("Ошибка tmkselect в функции setRtAddress() "+result); 
+				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+				if (result!=0)
+				{
+					throw new Eclus1553Exception("Ошибка rtdefaddress в функции setRtAddress() "+result); 
+				}
+			}
+		}
+	}
+	public void setRtAddress(Integer rtAddress) throws Eclus1553Exception
+	{
+		this.rtAddress = rtAddress;
+		if (workMode==MilWorkMode.eMilWorkModeRT)
+		{
+			synchronized (syncObject) {
+				int result  = tmkselect();
+				if (result!=0)
+					throw new Eclus1553Exception("Ошибка tmkselect в функции setRtAddress() "+result); 
+				result = rtdefaddress(rtAddress);
+				if (result!=0)
+				{
+					throw new Eclus1553Exception("Ошибка rtdefaddress в функции setRtAddress() "+result); 
+				}
+			}
+		}
+	}
+	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
+	{
+		int result = 0;
 		synchronized (syncObject) {
-			if (initiliased)
+			if (initiliased || !workMode.equals(MilWorkMode.eMilWorkModeNotSetted))
 				return;
-			int result =TmkOpen();
+
+			result =tmkOpen();
 			if (result!=0)
 				throw new Eclus1553Exception("Ошибка TmkOpen "+result);
 
+
 			result = tmkconfig();
-			result =tmkselect();
-			result = mtreset();
-
-			result|=mtdefirqmode(Elcus1553Device.RT_GENER1_BL|Elcus1553Device.RT_GENER2_BL);
-			Assert.assertEquals(0, result);
-
-			mtMaxBase = mtgetmaxbase();
-			short i=0;
-			for (i = 0; i < mtMaxBase; ++i)
+			if (result!=0)
+				throw new Eclus1553Exception("Ошибка tmkconfig "+result);
+			result = tmkselect();
+			if (result!=0)
+				throw new Eclus1553Exception("Ошибка tmkselect "+result);
+			if (demandWorkMode.equals(MilWorkMode.eMilWorkModeMT))
 			{
-				mtdefbase(i);
-				mtdeflink((i + 1), (Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG));
-			}
-			mtdefbase(i);
-			mtdeflink(0, Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG);
-			mtstop();
-			workMode = MilWorkMode.eMilWorkModeMT;
-		}
-		runnerThread = new Thread(new Runnable() {
+				result = mtreset();
+				if (result!=0)
+					throw new Eclus1553Exception("Ошибка mtreset "+result);
 
-			@Override
-			public void run() {
-				int events = 0;
-				int waitingtime = 10;
-				int mtLastBase = 0;
-				int result=0;
-				TTmkEventData eventData = new TTmkEventData();
-				int sw;
-				Pointer pBuffer = new Memory(64*2);
-				while (threadRunning)
+				result|=mtdefirqmode(Elcus1553Device.RT_GENER1_BL|Elcus1553Device.RT_GENER2_BL);
+				Assert.assertEquals(0, result);
+
+				mtMaxBase = mtgetmaxbase();
+				short i=0;
+				for (i = 0; i < mtMaxBase; ++i)
 				{
-					events = tmkwaitevents(1 << cardNumber, waitingtime);
-					if (events == (1 << cardNumber))
+					mtdefbase(i);
+					mtdeflink((i + 1), (Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG));
+				}
+				mtdefbase(i);
+				mtdeflink(0, Elcus1553Device.CX_CONT | Elcus1553Device.CX_NOINT | Elcus1553Device.CX_SIG);
+				mtstop();
+
+				runnerThread = new Thread(()-> {
+
+					int events = 0;
+					int waitingtime = 10;
+					int mtLastBase = 0;
+					int res=0;
+					TTmkEventData eventData = new TTmkEventData();
+					int sw;
+					Pointer pBuffer = new Memory(64*2);
+					while (threadRunning)
 					{
-						synchronized (syncObject) {
-							tmkselect();
-							tmkgetevd(eventData);
-							
-							
-							  if (eventData.nInt == 3)
+						events = tmkwaitevents(1 << cardNumber, waitingtime);
+						if (events == (1 << cardNumber))
+						{
+							synchronized (syncObject) {
+								tmkselect();
+								tmkgetevd(eventData);
+
+
+								if (eventData.nInt == 3)
 								{
 								}
 								else if (eventData.nInt == 4)
 								{
 
-				                    while (mtLastBase != eventData.union.mt.wBase)
-				                    {
-				                        result = mtdefbase(mtLastBase);
-				                        
-				                        sw = mtgetsw();
-				                        int statusword = eventData.union.mt.wResultX;
-				                        
-				                        mtgetblk(0, pBuffer, 64);
-				                        short[] buffer = pBuffer.getShortArray(0,64); 
-				                        
-				                        buffer[63] = (short)(statusword&0xff);
-				                        buffer[58] = (short)sw;
-				                        System.out.println(String.format("%04X", buffer[0]));
+									while (mtLastBase != eventData.union.mt.wBase)
+									{
+										res = mtdefbase(mtLastBase);
+
+										sw = mtgetsw();
+										int statusword = eventData.union.mt.wResultX;
+
+										mtgetblk(0, pBuffer, 64);
+										short[] buffer = pBuffer.getShortArray(0,64); 
+
+										buffer[63] = (short)(statusword&0xff);
+										buffer[58] = (short)sw;
+										System.out.println(String.format("%04X", buffer[0]));
 										//if (callback)
 										//{
 										//	info.data = QByteArray((const char *)buffer,64*2);
 										//	callback(info);
 										//}
-				                        ++mtLastBase;
-				                        if (mtLastBase > mtMaxBase)
-				                            mtLastBase = 0;
+										++mtLastBase;
+										if (mtLastBase > mtMaxBase)
+											mtLastBase = 0;
 
-				                    }
+
+									}
+
+
 								}
-							
-							
+							}
 						}
+
 					}
+
+				});
+				mtstartx(0, (CX_CONT | CX_NOINT | CX_NOSIG));
+			}
+			else if (demandWorkMode.equals(MilWorkMode.eMilWorkModeRT))
+			{
+				result = rtreset();
+				if (result!=0)
+				{
+					throw new Eclus1553Exception("Ошибка rtreset "+result);
+				}
+				result = rtdefaddress(rtAddress);
+				if (result!=0)
+				{
+					throw new Eclus1553Exception("Ошибка rtreset "+result);
 				}
 
-			}
-			
-		});
-		threadRunning = true;
-		runnerThread.start();
-		mtstartx(0, (CX_CONT | CX_NOINT | CX_NOSIG));
+				result = rtdefmode(0);
+				result|=rtdefirqmode(0);
+				rtenable(RT_DISABLE);
+				runnerThread = new Thread(()->
+				{
+					int events = 0;
+					int waitingtime = 10;
+					int res=0;
+					Mil1553Packet Msg = new Mil1553Packet();
+					TTmkEventData eventData = new TTmkEventData();
+					Pointer pBuffer = new Memory(32*2);
+					while (threadRunning)
+					{
+						events = tmkwaitevents(1 << cardNumber, waitingtime);
+						if (events == (1 << cardNumber))
+						{
+							synchronized (syncObject) {
+								tmkselect();
+								tmkgetevd(eventData);
+								if (eventData.nInt == 1)//rtIntCmd
+								{
+									Msg.commandWord = eventData.union.rt.wCmd;
+									Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
+									
+									//if (callback)
+									//	callback(info);
 
+								}
+								else if (eventData.nInt == 2)//rtIntErr
+								{
+									//Info() << L"RT has found out a error in the command addressed to it "<< QString().sprintf("%04X",tmkEvD.rt.wStatus) << msg_show;
+									//Info() << "Word of a condition RT: " << QString().sprintf("%04X", tmkEvD.rt.wCmd) << msg_show;
+								}
+								else if (eventData.nInt == 3)//rtIntData
+								{
+									Msg.commandWord = eventData.union.rt.wStatus;
+									rtdefsubaddr(Mil1553Packet.getRTRBit(Msg.commandWord), Mil1553Packet.getSubAddress(Msg.commandWord));
+									int len = Mil1553Packet.getWordsCount(Msg.commandWord);
+									if (len==0) len=32;
+									rtgetblk(0, pBuffer, len);
+									short[] buffer = pBuffer.getShortArray(0,32); 
+									System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
+									
+									//if (callback)
+									//	callback(info);
+								}
+							}
+						}
+					}
+				});
+
+			}
+			else if (demandWorkMode.equals(MilWorkMode.eMilWorkModeBC))
+			{
+
+			}
+			else 
+			{
+				return;
+			}
+			workMode = demandWorkMode;
+			initiliased=true;
+			threadRunning = true;
+			runnerThread.start();
+		}
 	}
 
 	public Elcus1553Device(int cardNumber)
 	{
 		this.cardNumber = cardNumber;
 	}
-	int TmkOpen()
+	
+    int rtgetcmddata(int rtBusCommand)
+    {
+        return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetcmddata, rtBusCommand));
+    }
+	
+	int rtenable(int rtEnable)
+	{
+		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtenable, rtEnable));
+	}
+	static int tmkOpen()
 	{
 		int _VTMK4Arg;
 		int ErrorCode;
@@ -636,10 +763,10 @@ public class Elcus1553Device {
 		}
 		return 0;
 	}
-    int mtgetsw()
-    {
-        return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0));
-    }
+	int mtgetsw()
+	{
+		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0));
+	}
 	int tmkconfig()
 	{
 		return tmkconfig(cardNumber);
@@ -709,7 +836,7 @@ public class Elcus1553Device {
 	{   
 
 		CC cc = new CC();
-		
+
 
 		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd&0xffffffff, cc.getPointer());
 		ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
@@ -840,6 +967,16 @@ public class Elcus1553Device {
 		return _VTMK4Arg;
 	}
 
+    void rtgetblk(int rtAddr, Pointer pcBuffer, int cwLength)
+    {
+		CLong2 c = new CLong2();
+		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
+		bb.putInt((rtAddr|cwLength<<16));
+		bb.putInt(0);
+		bb.putLong(Pointer.nativeValue(pcBuffer));
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetblk, c.getPointer());
+    }
+	
 	void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
 	{
 		CLong2 c = new CLong2();
