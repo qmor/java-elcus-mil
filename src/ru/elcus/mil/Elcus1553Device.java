@@ -510,11 +510,18 @@ public class Elcus1553Device {
 
 	private boolean threadRunning = false;
 	private int cardNumber = 0;
+	public int getCardNumber() {
+		return cardNumber;
+	}
+
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
+	public MilWorkMode getWorkMode() {
+		return workMode;
+	}
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
 		if (workMode==MilWorkMode.eMilWorkModeRT)
@@ -522,11 +529,11 @@ public class Elcus1553Device {
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
-					throw new Eclus1553Exception("Ошибка tmkselect в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
 				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
 				if (result!=0)
 				{
-					throw new Eclus1553Exception("Ошибка rtdefaddress в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
 				}
 			}
 		}
@@ -539,11 +546,11 @@ public class Elcus1553Device {
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
-					throw new Eclus1553Exception("Ошибка tmkselect в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
 				result = rtdefaddress(rtAddress);
 				if (result!=0)
 				{
-					throw new Eclus1553Exception("Ошибка rtdefaddress в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
 				}
 			}
 		}
@@ -557,20 +564,20 @@ public class Elcus1553Device {
 
 			result =tmkOpen();
 			if (result!=0)
-				throw new Eclus1553Exception("Ошибка TmkOpen "+result);
+				throw new Eclus1553Exception(this,"Ошибка TmkOpen "+result);
 
 
 			result = tmkconfig();
 			if (result!=0)
-				throw new Eclus1553Exception("Ошибка tmkconfig "+result);
+				throw new Eclus1553Exception(this,"Ошибка tmkconfig "+result);
 			result = tmkselect();
 			if (result!=0)
-				throw new Eclus1553Exception("Ошибка tmkselect "+result);
+				throw new Eclus1553Exception(this,"Ошибка tmkselect "+result);
 			if (demandWorkMode.equals(MilWorkMode.eMilWorkModeMT))
 			{
 				result = mtreset();
 				if (result!=0)
-					throw new Eclus1553Exception("Ошибка mtreset "+result);
+					throw new Eclus1553Exception(this,"Ошибка mtreset "+result);
 
 				result|=mtdefirqmode(Elcus1553Device.RT_GENER1_BL|Elcus1553Device.RT_GENER2_BL);
 				Assert.assertEquals(0, result);
@@ -651,12 +658,12 @@ public class Elcus1553Device {
 				result = rtreset();
 				if (result!=0)
 				{
-					throw new Eclus1553Exception("Ошибка rtreset "+result);
+					throw new Eclus1553Exception(this,"Ошибка rtreset "+result);
 				}
 				result = rtdefaddress(rtAddress);
 				if (result!=0)
 				{
-					throw new Eclus1553Exception("Ошибка rtreset "+result);
+					throw new Eclus1553Exception(this,"Ошибка rtreset "+result);
 				}
 
 				result = rtdefmode(0);
