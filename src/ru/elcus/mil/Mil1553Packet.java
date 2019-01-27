@@ -9,6 +9,7 @@ public class Mil1553Packet {
 	public short[] dataWords;
 	public EBus bus;
 	public EMilFormat format;
+	public EMilPacketStatus status;
 	public Mil1553Packet() {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{
@@ -56,7 +57,7 @@ public class Mil1553Packet {
 	{
 		return (cmdWord&0xffff)>>11;
 	}
-	public EMilFormat calcFormat(short cmdWord)
+	public static EMilFormat calcFormat(short cmdWord)
 	{
 		Integer rtrbit = getRTRBit(cmdWord);
 		Integer subaddress = getSubAddress(cmdWord);
