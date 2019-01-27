@@ -1,6 +1,8 @@
 package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Assert;
 
@@ -513,7 +515,8 @@ public class Elcus1553Device {
 	public int getCardNumber() {
 		return cardNumber;
 	}
-
+	private List<IMilRemoteTerminalReceiveMessageListener> remoteTerminalsListeners = new ArrayList<>();
+	private List<IMilMonitorReceiveMessageListener> monitorListeners = new ArrayList<>();
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
@@ -521,6 +524,15 @@ public class Elcus1553Device {
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
 	public MilWorkMode getWorkMode() {
 		return workMode;
+	}
+
+	public void addRemoteTerminalListener(IMilRemoteTerminalReceiveMessageListener listener)
+	{
+		remoteTerminalsListeners.add(listener);
+	}
+	public void addMonitorListener(IMilMonitorReceiveMessageListener listener)
+	{
+		monitorListeners.add(listener);
 	}
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
@@ -553,6 +565,44 @@ public class Elcus1553Device {
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
 				}
 			}
+		}
+	}
+	private Pointer rtSendPBuffer = new Memory(64*2);
+	private void sendPacketRT(Mil1553Packet packet)
+	{
+		synchronized (syncObject) 
+		{
+			int result =  tmkselect();
+			Integer subaddressMode  =  Mil1553Packet.getSubAddress(packet.commandWord);
+			Integer rtrBit = Mil1553Packet.getRTRBit(packet.commandWord);
+			Integer wordcountModeCode = Mil1553Packet.getWordsCount(packet.commandWord);
+			if (rtrBit==1)
+			{
+
+				if (subaddressMode!=0 && subaddressMode!=31)
+				{
+					if (wordcountModeCode == 0) wordcountModeCode=32;
+					rtdefsubaddr(RT_TRANSMIT,subaddressMode);
+					while(rtbusy()==1)
+					{
+						//Debug() << "wait for rtbusy" << msg_show;
+					}
+					rtSendPBuffer.write(0, packet.dataWords, 0, 32);
+					rtputblk(0,rtSendPBuffer,wordcountModeCode);
+				}
+				else //if Mode
+				{
+
+					rtputcmddata(packet.commandWord & ((1<<10) | 31), (int)packet.dataWords[0]); // first dataword is for CMD data
+				}
+			}
+		}
+	}
+	public void sendPacket(Mil1553Packet packet)
+	{
+		if (workMode == MilWorkMode.eMilWorkModeRT)
+		{
+			sendPacketRT(packet);
 		}
 	}
 	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
@@ -614,6 +664,7 @@ public class Elcus1553Device {
 
 								if (eventData.nInt == 3)
 								{
+
 								}
 								else if (eventData.nInt == 4)
 								{
@@ -628,22 +679,19 @@ public class Elcus1553Device {
 										mtgetblk(0, pBuffer, 64);
 										short[] buffer = pBuffer.getShortArray(0,64); 
 
-										buffer[63] = (short)(statusword&0xff);
-										buffer[58] = (short)sw;
-										System.out.println(String.format("%04X", buffer[0]));
-										//if (callback)
-										//{
-										//	info.data = QByteArray((const char *)buffer,64*2);
-										//	callback(info);
-										//}
+										//buffer[63] = (short)(statusword&0xff);
+										//buffer[58] = (short)sw;
+										Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,(short)sw,(short)statusword);
+										Mil1553Packet packet = new Mil1553Packet(rawPacket);
+										for (IMilMonitorReceiveMessageListener listener: monitorListeners)
+										{
+											listener.msgReceived(packet);
+										}
 										++mtLastBase;
 										if (mtLastBase > mtMaxBase)
 											mtLastBase = 0;
 
-
 									}
-
-
 								}
 							}
 						}
@@ -689,9 +737,11 @@ public class Elcus1553Device {
 								{
 									Msg.commandWord = eventData.union.rt.wCmd;
 									Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
-									
-									//if (callback)
-									//	callback(info);
+
+									for (IMilRemoteTerminalReceiveMessageListener listener: remoteTerminalsListeners)
+									{
+										listener.msgReceived(Msg);
+									}
 
 								}
 								else if (eventData.nInt == 2)//rtIntErr
@@ -708,9 +758,11 @@ public class Elcus1553Device {
 									rtgetblk(0, pBuffer, len);
 									short[] buffer = pBuffer.getShortArray(0,32); 
 									System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
-									
-									//if (callback)
-									//	callback(info);
+
+									for (IMilRemoteTerminalReceiveMessageListener listener: remoteTerminalsListeners)
+									{
+										listener.msgReceived(Msg);
+									}
 								}
 							}
 						}
@@ -737,12 +789,15 @@ public class Elcus1553Device {
 	{
 		this.cardNumber = cardNumber;
 	}
-	
-    int rtgetcmddata(int rtBusCommand)
-    {
-        return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetcmddata, rtBusCommand));
-    }
-	
+	Integer rtbusy()
+	{
+		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtbusy,0));
+	}
+	int rtgetcmddata(int rtBusCommand)
+	{
+		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetcmddata, rtBusCommand));
+	}
+
 	int rtenable(int rtEnable)
 	{
 		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtenable, rtEnable));
@@ -974,16 +1029,29 @@ public class Elcus1553Device {
 		return _VTMK4Arg;
 	}
 
-    void rtgetblk(int rtAddr, Pointer pcBuffer, int cwLength)
-    {
+	void rtgetblk(int rtAddr, Pointer pcBuffer, int cwLength)
+	{
 		CLong2 c = new CLong2();
 		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
 		bb.putInt((rtAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
 		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetblk, c.getPointer());
-    }
-	
+	}
+	void rtputcmddata(Integer rtBusCommand, Integer rtData)
+	{
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputcmddata, rtBusCommand | (rtData << 16));
+	}
+	void rtputblk(Integer rtAddr, Pointer pcBuffer, Integer cwLength)
+	{
+		CLong2 c = new CLong2();
+		ByteBuffer bb = c.getPointer().getByteBuffer(0,c.size());
+		bb.putInt((rtAddr|cwLength<<16));
+		bb.putInt(0);
+		bb.putLong(Pointer.nativeValue(pcBuffer));
+		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+	}
+
 	void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
 	{
 		CLong2 c = new CLong2();

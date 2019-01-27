@@ -112,8 +112,14 @@ package ru.elcus.mil;
 +--------+-----+-----+-----+-----+-----+-----+-----+----+----+-----+--+-----+--+----+
  */
 public class Mil1553RawPacketMT {
-public short[] basedata = new short[64];
-public short sw;//mtgetsw();
-public short statusword;//eventData.union.mt.wResultX;
+	public short[] basedata = new short[64];
+	public short sw;//mtgetsw();
+	public short statusword;//eventData.union.mt.wResultX;
+	public Mil1553RawPacketMT (short[] basedata,short sw,short statusword)
+	{
+		this.sw = sw;
+		this.statusword = statusword;
+		System.arraycopy(basedata, 0, this.basedata, 0, 64);
+	}
 }
 
