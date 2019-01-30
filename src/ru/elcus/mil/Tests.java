@@ -1,5 +1,4 @@
 package ru.elcus.mil;
-import org.junit.Assert;
 import org.junit.Test;
 public class Tests {
 
@@ -9,7 +8,7 @@ public class Tests {
 
 		Elcus1553Device device = new Elcus1553Device(2);
 		try {
-			device.initAsMT();
+			device.initAs(MilWorkMode.eMilWorkModeMT);
 		} catch (Eclus1553Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

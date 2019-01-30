@@ -1,7 +1,6 @@
 package ru.elcus.mil;
-import org.junit.*;
+import org.junit.Test;
 
-import ru.elcus.mil.structs.TMK;
 import ru.elcus.mil.structs.TTmkEventData;
 import ru.elcus.mil.structs.TTmkEventDataUnion;
 public class StructTests {
