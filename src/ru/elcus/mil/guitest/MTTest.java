@@ -6,7 +6,9 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import net.miginfocom.swing.MigLayout;
+import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
+import ru.elcus.mil.MilWorkMode;
 
 import javax.swing.JSpinner;
 import javax.swing.JLabel;
@@ -68,6 +70,12 @@ public class MTTest {
 			public void actionPerformed(ActionEvent e) {
 				if (device==null)
 					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));
+					try {
+						device.initAs(MilWorkMode.eMilWorkModeMT);
+					} catch (Eclus1553Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				device.addMsgReceivedListener((msg)->{
 					model.addElement(msg);
 				});
@@ -77,6 +85,7 @@ public class MTTest {
 		
 		JButton button_1 = new JButton("Остановка монитора");
 		panel.add(button_1, "cell 1 1");
+		
 		
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 2 2 1,grow");
