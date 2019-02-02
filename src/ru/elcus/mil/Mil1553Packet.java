@@ -1,9 +1,12 @@
 package ru.elcus.mil;
 
+import java.util.Date;
+
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
 
 public class Mil1553Packet {
+	public Date date;
 	public short commandWord;
 	public short answerWord;
 	public short[] dataWords = new short[32];
@@ -15,6 +18,7 @@ public class Mil1553Packet {
 	{
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
+		date = new Date();
 		format = calcFormat(commandWord);
 		switch (format) {
 		case CC_FMT_1:
@@ -47,7 +51,7 @@ public class Mil1553Packet {
 	}
 	@Override
 	public String toString() {
-		return String.format("CW %04X AW %04X %s %s", commandWord,answerWord,format,bus);
+		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, bus, date);
 	}
 	public static Integer getWordsCount(short cmdWord)
 	{
