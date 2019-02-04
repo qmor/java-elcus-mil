@@ -19,9 +19,16 @@ import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
+import ru.elcus.mil.structs.EBus;
 
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTable;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.ButtonGroup;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JRadioButton;
+import javax.swing.LayoutStyle.ComponentPlacement;
 
 /**
  * @author Guest
@@ -71,7 +78,7 @@ public class ChannelControllerTest {
 		lblCardNumber.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(lblCardNumber, "cell 0 0,growx");
 		
-		JSpinner spinner = new JSpinner();
+		JSpinner spinner = new JSpinner(new SpinnerNumberModel(0,0,100,1));
 		panel.add(spinner, "cell 1 0");
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		
@@ -81,6 +88,39 @@ public class ChannelControllerTest {
 		JTable table = new JTable(model);
 		scrollPane_1.setViewportView(table);
 		table.setFont(new Font("Dialog", Font.BOLD, 14));
+		
+		JPanel panel_1 = new JPanel();
+		panel.add(panel_1, "cell 1 1,grow");
+		
+		JRadioButton line1 = new JRadioButton("Line 1",true);
+		
+		JRadioButton line2 = new JRadioButton("Line 2");
+		ButtonGroup group = new ButtonGroup();
+		group.add(line1);
+		group.add(line2);
+		
+		GroupLayout gl_panel_1 = new GroupLayout(panel_1);
+		gl_panel_1.setHorizontalGroup(
+			gl_panel_1.createParallelGroup(Alignment.LEADING)
+				.addGroup(Alignment.TRAILING, gl_panel_1.createSequentialGroup()
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addComponent(line1)
+					.addContainerGap())
+				.addGroup(gl_panel_1.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(line2)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+		);
+		gl_panel_1.setVerticalGroup(
+			gl_panel_1.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel_1.createSequentialGroup()
+					.addGap(226)
+					.addComponent(line1)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(line2)
+					.addContainerGap(215, Short.MAX_VALUE))
+		);
+		panel_1.setLayout(gl_panel_1);
 		
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 3,grow");
@@ -105,10 +145,10 @@ public class ChannelControllerTest {
 				
 				device.addMsgReceivedListener((msg)->{
 					modelPacket.addElement(msg);
-				});
+				});				
 				
 				Mil1553Packet packet = model.getPacket();
-
+				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;				
 				device.sendPacket(packet);			
 			}
 		});
@@ -143,10 +183,19 @@ public class ChannelControllerTest {
 		@Override
 		public void setValueAt(Object aValue, int row, int column) {	
 			if (row == 0) {
-				packet.commandWord=Short.parseShort(aValue.toString(),16);
+				try {
+					packet.commandWord=Short.parseShort(aValue.toString(),16);
+				} catch(NumberFormatException e) {
+					System.out.print(e.getMessage()+"\n");
+				}
 				return;
 			}
-			packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
+			try {
+				packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
+			} catch(NumberFormatException e) {
+				System.out.print(e.getMessage()+"\n");
+			}
+			return;
 		}
 	}	
 }
