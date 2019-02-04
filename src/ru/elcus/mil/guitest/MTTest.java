@@ -20,11 +20,14 @@ public class MTTest {
 
 	private JFrame frame;
 
-	/**
+	/*
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
+			/* (non-Javadoc)
+			 * @see java.lang.Runnable#run()
+			 */
 			public void run() {
 				try {
 					MTTest window = new MTTest();

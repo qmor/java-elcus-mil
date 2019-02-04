@@ -2,11 +2,13 @@ package ru.elcus.mil;
 
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
+import java.util.Date;
 
 public class Mil1553Packet {
+	public Date date;
 	public short commandWord;
 	public short answerWord;
-	public short[] dataWords;
+	public short[] dataWords = new short[32];
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
@@ -19,10 +21,14 @@ public class Mil1553Packet {
 		switch (format) {
 		case CC_FMT_1:
 			System.arraycopy(rawPacket.basedata,1,dataWords,0,getWordsCount(commandWord));
-			answerWord = rawPacket.basedata[1+getWordsCount(commandWord)];
+			int i = getWordsCount(commandWord);
+			if (i==0) 
+				i=32;
+			answerWord = rawPacket.basedata[i+1];
 			break;
 		case CC_FMT_2:
-			answerWord = rawPacket.basedata[1];
+			answerWord = rawPacket
+			.basedata[1];
 			System.arraycopy(rawPacket.basedata,2,dataWords,0,getWordsCount(commandWord));
 			break;
 		case CC_FMT_4:
@@ -87,6 +93,9 @@ public class Mil1553Packet {
 		return EMilFormat.CC_FMT_UNKNWN;
 		
 	}
-
-
+	
+	@Override
+	public String toString() {
+		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, bus, date);
+	}
 }
