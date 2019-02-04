@@ -59,7 +59,7 @@ public class ChannelControllerTest {
 	 */
 	private void initialize() {
 		frmChannelcontrollettest = new JFrame();
-		frmChannelcontrollettest.setTitle("ChannelControlletTest");
+		frmChannelcontrollettest.setTitle("ChannelControllerTest");
 		frmChannelcontrollettest.setBounds(100, 100, 450, 750);
 		frmChannelcontrollettest.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -108,7 +108,7 @@ public class ChannelControllerTest {
 				});
 				
 				Mil1553Packet packet = model.getPacket();
-				
+
 				device.sendPacket(packet);			
 			}
 		});
@@ -122,22 +122,31 @@ public class ChannelControllerTest {
 		public Mil1553Packet getPacket() {
 			return packet;
 		}
+		
 		@Override
 		public int getRowCount() {			
 			return 33;
 		}
+		
 		@Override
 		public int getColumnCount() {
 			return 1;
 		}		
 		
 		@Override
-		public Object getValueAt(int row, int column) {
+		public Object getValueAt(int row, int column) {			
 			if (row == 0)
-				return packet.commandWord;
-			
-			return packet.dataWords[row-1];
+				return Integer.toHexString(packet.commandWord).toUpperCase();
+			return Integer.toHexString(packet.dataWords[row-1]).toUpperCase();
 		}
 		
+		@Override
+		public void setValueAt(Object aValue, int row, int column) {	
+			if (row == 0) {
+				packet.commandWord=Short.parseShort(aValue.toString(),16);
+				return;
+			}
+			packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
+		}
 	}	
 }

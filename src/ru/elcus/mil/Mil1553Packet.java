@@ -23,7 +23,7 @@ public class Mil1553Packet {
 			System.arraycopy(rawPacket.basedata,1,dataWords,0,getWordsCount(commandWord));
 			int i = getWordsCount(commandWord);
 			if (i==0) 
-				i=32;
+				i = 32;
 			answerWord = rawPacket.basedata[i+1];
 			break;
 		case CC_FMT_2:
