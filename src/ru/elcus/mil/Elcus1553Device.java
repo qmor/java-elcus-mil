@@ -540,13 +540,29 @@ public class Elcus1553Device {
 	}
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
-		if (workMode==MilWorkMode.eMilWorkModeRT)
+		if (workMode.equals(MilWorkMode.eMilWorkModeRT))
 		{
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
 				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+				if (result!=0)
+				{
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
+				}
+			}
+		}
+		
+		else if(workMode.equals(MilWorkMode.eMilWorkModeMT))
+		{
+			synchronized (syncObject) {
+				int result  = tmkselect();
+				if (result!=0)
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
+				
+				result = (pause) ? mtstop() : mtstartx(0, (CX_CONT | CX_NOINT | CX_NOSIG));
+				
 				if (result!=0)
 				{
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
