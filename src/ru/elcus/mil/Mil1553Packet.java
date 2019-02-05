@@ -1,9 +1,8 @@
 package ru.elcus.mil;
 
-import java.util.Date;
-
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
+import java.util.Date;
 
 public class Mil1553Packet {
 	public Date date;
@@ -16,17 +15,17 @@ public class Mil1553Packet {
 	public Mil1553Packet() {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{
+		date = new Date();
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
-		date = new Date();
 		format = calcFormat(commandWord);
 		switch (format) {
 		case CC_FMT_1:
 			System.arraycopy(rawPacket.basedata,1,dataWords,0,getWordsCount(commandWord));
-			int i= getWordsCount(commandWord);
-			if (i==0)
-				i=32;
-			answerWord = rawPacket.basedata[1+i];
+			int i = getWordsCount(commandWord);
+			if (i==0) 
+				i = 32;
+			answerWord = rawPacket.basedata[i+1];
 			break;
 		case CC_FMT_2:
 			answerWord = rawPacket
@@ -48,10 +47,6 @@ public class Mil1553Packet {
 			break;
 		}
 
-	}
-	@Override
-	public String toString() {
-		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, bus, date);
 	}
 	public static Integer getWordsCount(short cmdWord)
 	{
@@ -99,6 +94,9 @@ public class Mil1553Packet {
 		return EMilFormat.CC_FMT_UNKNWN;
 		
 	}
-
-
+	
+	@Override
+	public String toString() {
+		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, bus, date);
+	}
 }

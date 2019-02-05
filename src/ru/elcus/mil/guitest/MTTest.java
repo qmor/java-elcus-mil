@@ -155,7 +155,7 @@ public class MTTest {
 							
 							window.l_AW.setText(String.format("%04x", list.getSelectedValue().answerWord));;
 							window.l_CW.setText(String.format("%04x ", list.getSelectedValue().commandWord));
-							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus));
+							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus.toInt()));
 							window.l_date.setText(String.valueOf(list.getSelectedValue().date));
 							window.l_format.setText(String.valueOf(list.getSelectedValue().format));
 							window.l_status.setText(String.valueOf(list.getSelectedValue().status));
