@@ -97,13 +97,16 @@ public class MTTest {
 					device.addMsgReceivedListener((msg)->{
 						model.addElement(msg);
 					});
-				} else
+				} 
+				else
+				{
 					try {
 						device.setPause(false);
 					} catch (Eclus1553Exception e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
+				}
 			}
 		});
 		panel.add(button, "cell 0 1");
