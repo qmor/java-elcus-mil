@@ -12,9 +12,9 @@ public class Mil1553Packet {
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
-	public Mil1553Packet() {}
+	public Mil1553Packet () {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
-	{
+	{		
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
 		format = calcFormat(commandWord);
@@ -67,8 +67,7 @@ public class Mil1553Packet {
 	{
 		Integer rtrbit = getRTRBit(cmdWord);
 		Integer subaddress = getSubAddress(cmdWord);
-		boolean isItMode = (subaddress==0||subaddress==0x1f)?true:false;
-
+		boolean isItMode = (subaddress==0||subaddress==0x1f)?true:false;		
 		if (rtrbit==0 && !isItMode)
 		{
 			return EMilFormat.CC_FMT_1;

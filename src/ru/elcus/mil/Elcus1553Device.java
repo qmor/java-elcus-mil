@@ -2,6 +2,8 @@ package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.Assert;
@@ -578,10 +580,10 @@ public class Elcus1553Device {
 			Integer rtrBit = Mil1553Packet.getRTRBit(packet.commandWord);
 			Integer wordcountModeCode = Mil1553Packet.getWordsCount(packet.commandWord);
 			if (rtrBit==1)
-			{
-
+			{				
 				if (subaddressMode!=0 && subaddressMode!=31)
 				{
+					System.out.print(subaddressMode);
 					if (wordcountModeCode == 0) wordcountModeCode=32;
 					rtdefsubaddr(RT_TRANSMIT,subaddressMode);
 					while(rtbusy()==1)
@@ -598,11 +600,16 @@ public class Elcus1553Device {
 			}
 		}
 	}
+			
 	public void sendPacket(Mil1553Packet packet)
 	{
 		if (workMode == MilWorkMode.eMilWorkModeRT)
 		{
 			sendPacketRT(packet);
+		}
+		else if(workMode == MilWorkMode.eMilWorkModeBC)
+		{
+			packetsForSendBC.add(packet);
 		}
 	}
 	private void listenLoopBC()
@@ -610,19 +617,16 @@ public class Elcus1553Device {
 		int events;
 		TTmkEventData eventData = new TTmkEventData();
 		Mil1553Packet Msg = new Mil1553Packet();
-		Pointer pBuffer = new Memory(64*2);
+		Pointer pBuffer = new Memory(64*2);		
 		while(threadRunning)
 		{
 			events = tmkwaitevents(1<<cardNumber, 50);
 			if (events==(1<<cardNumber))
 			{
-				synchronized (syncObject) {
-
-
+				synchronized (syncObject) {					
 					tmkselect();
 					tmkgetevd(eventData);
 					bcdefbase(0);
-
 					Msg.commandWord = (short) bcgetw(0);
 					Msg.format = Mil1553Packet.calcFormat(Msg.commandWord);
 					Integer cmdcodeWordCount = Mil1553Packet.getWordsCount(Msg.commandWord);
@@ -632,27 +636,31 @@ public class Elcus1553Device {
 						bcgetblk(1,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1+cmdcodeWordCount);
+						Msg.date = new Date();
 						break;
 					case CC_FMT_2:
 						bcgetblk(2,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1);
+						Msg.date = new Date();
 						break;
 					case CC_FMT_4:
 						Msg.answerWord = (short) bcgetw(1);
+						Msg.date = new Date();
 						break;
 					case CC_FMT_5:
 						Msg.answerWord = (short) bcgetw(1);
 						Msg.dataWords[0] = (short) bcgetw(2);
+						Msg.date = new Date();
 						break;
 					case CC_FMT_6:
 						Msg.answerWord = (short) bcgetw(2);
 						Msg.dataWords[0] = (short) bcgetw(1);
+						Msg.date = new Date();
 						break;
 						default :
 							break;
 					}
-
 
 					if (eventData.nInt==1)
 					{
@@ -661,37 +669,35 @@ public class Elcus1553Device {
 						
 						Msg.status = EMilPacketStatus.eRECEIVED;
 					}
+					
 					if (eventData.nInt==2)
 					{
-						Msg.status = EMilPacketStatus.eFAILED;
-						/*
-					Msg.Status = Mil1553ExchangeStatus::RECEIVE_TIMEOUT;
-					if (BC_MessagesVector.size())
-					{
-						BC_MessagesVector.erase(BC_MessagesVector.begin());
+						Msg.status = EMilPacketStatus.eFAILED;																		
+						if (!packetsForSendBC.isEmpty())
+						{
+							packetsForSendBC.clear();
+						}
+	                    //if (eventData.union.bc.wResult==S_ERAO_MASK)
+	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error in a field of the address received RW is found out" << msg_show;
+	
+	                    //else if (eventData.union.bc.wResult == S_MEO_MASK)
+	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error of a code 'Manchester - 2' is found out at answer RT" << msg_show;
+	
+						//else if (eventData.union.bc.wResult == S_EBC_MASK)
+	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error of the echo - control over transfer BC is found out" << msg_show;
+	
+	                    //else if (eventData.union.bc.wResult == S_TO_MASK)
+	                        //Error()  <<"Elcus1553Device::ListenLoopBC() It is not received the answer from RT" << msg_show;
+	
+	                    //else if (eventData.union.bc.wResult == S_IB_MASK)
+	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The established bits in received RW are found out" << msg_show;						 
 					}
-                    if (tmkEvD.bc.wResult & S_ERAO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error in a field of the address received RW is found out" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_MEO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error of a code 'Manchester - 2' is found out at answer RT" << msg_show;
-
-					else if (tmkEvD.bc.wResult & S_EBC_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error of the echo - control over transfer BC is found out" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_TO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() It is not received the answer from RT" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_IB_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The established bits in received RW are found out" << msg_show;
-						 */
-					}
+					
 					for (IMilMsgReceivedListener listener: msgReceivedListeners)
 					{
 						listener.msgReceived(Msg);
 					}
 				}
-
 			}
 			if (!packetsForSendBC.isEmpty())
 			{
@@ -740,11 +746,10 @@ public class Elcus1553Device {
 					else
 					{
 						//Debug() << "Elcus1553Device::ProcessBC: exchange format is not realized yet" << msg_show;
-					}
+					}															
 				}
 			}
 		}
-
 	}
 
 	private void listenLoopRT()

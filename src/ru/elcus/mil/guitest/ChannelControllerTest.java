@@ -25,6 +25,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JRadioButton;
@@ -55,7 +56,7 @@ public class ChannelControllerTest {
 	 */
 	private Elcus1553Device device;
 	TableModel model = new TableModel();
-	MTListViewModel modelPacket = new MTListViewModel();
+	DefaultListModel<String> modelPacket = new DefaultListModel<String>();
 	
 	public ChannelControllerTest() {
 		initialize();
@@ -125,7 +126,7 @@ public class ChannelControllerTest {
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 3,grow");
 		
-		JList<Mil1553Packet> list = new JList<Mil1553Packet>(modelPacket);
+		JList<String> list = new JList<String>(modelPacket);
 		scrollPane.setViewportView(list);
 		list.setFont(new Font("Dialog", Font.BOLD, 14));
 		
@@ -139,17 +140,17 @@ public class ChannelControllerTest {
 				{
 					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));	
 					try {
-						device.initAs(MilWorkMode.eMilWorkModeMT);
+						device.initAs(MilWorkMode.eMilWorkModeBC);
 					} catch (Eclus1553Exception e1) {
 						e1.printStackTrace();
 					}	
 					device.addMsgReceivedListener((msg)->{
-						modelPacket.addElement(msg);
+						modelPacket.addElement(msg.toString());
 					});	
 				}
 				Mil1553Packet packet = model.getPacket();
-				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;				
-				device.sendPacket(packet);			
+				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;
+				device.sendPacket(packet);	
 			}
 		});
 	}

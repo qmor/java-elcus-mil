@@ -43,7 +43,7 @@ public class MTTest {
 	 * Create the application.
 	 */
 	private Elcus1553Device device;
-	MTListViewModel model = new MTListViewModel();
+	PacketListViewModel model = new PacketListViewModel();
 	public MTTest() {
 		initialize();
 	}
