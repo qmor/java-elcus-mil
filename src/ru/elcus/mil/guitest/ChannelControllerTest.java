@@ -36,13 +36,13 @@ import javax.swing.LayoutStyle.ComponentPlacement;
  */
 public class ChannelControllerTest {
 	
-	private JFrame frmChannelcontrollettest;
+	private JFrame frmChannelcontrollertest;
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
 					ChannelControllerTest window = new ChannelControllerTest();
-					window.frmChannelcontrollettest.setVisible(true);
+					window.frmChannelcontrollertest.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -65,13 +65,13 @@ public class ChannelControllerTest {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frmChannelcontrollettest = new JFrame();
-		frmChannelcontrollettest.setTitle("ChannelControllerTest");
-		frmChannelcontrollettest.setBounds(100, 100, 450, 750);
-		frmChannelcontrollettest.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmChannelcontrollertest = new JFrame();
+		frmChannelcontrollertest.setTitle("ChannelControllerTest");
+		frmChannelcontrollertest.setBounds(100, 100, 450, 750);
+		frmChannelcontrollertest.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
-		frmChannelcontrollettest.getContentPane().add(panel, BorderLayout.CENTER);
+		frmChannelcontrollertest.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[grow][grow]", "[][grow][][grow]"));
 					
 		JLabel lblCardNumber = new JLabel("Card number:");
@@ -136,17 +136,17 @@ public class ChannelControllerTest {
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (device==null)
-					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));
-				try {
-					device.initAs(MilWorkMode.eMilWorkModeMT);
-				} catch (Eclus1553Exception e1) {
-					e1.printStackTrace();
+				{
+					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));	
+					try {
+						device.initAs(MilWorkMode.eMilWorkModeMT);
+					} catch (Eclus1553Exception e1) {
+						e1.printStackTrace();
+					}	
+					device.addMsgReceivedListener((msg)->{
+						modelPacket.addElement(msg);
+					});	
 				}
-				
-				device.addMsgReceivedListener((msg)->{
-					modelPacket.addElement(msg);
-				});				
-				
 				Mil1553Packet packet = model.getPacket();
 				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;				
 				device.sendPacket(packet);			

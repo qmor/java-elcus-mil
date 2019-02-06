@@ -593,7 +593,6 @@ public class Elcus1553Device {
 				}
 				else //if Mode
 				{
-
 					rtputcmddata(packet.commandWord & ((1<<10) | 31), (int)packet.dataWords[0]); // first dataword is for CMD data
 				}
 			}
