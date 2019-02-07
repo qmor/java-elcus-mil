@@ -513,7 +513,8 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 
-
+	boolean paused=true;
+	int mtLastBase = 0;
 	private Thread runnerThread;
 
 	private boolean threadRunning = false;
@@ -546,23 +547,28 @@ public class Elcus1553Device {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
-				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+				
+				if(paused != pause)
+				{
+					result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+					paused = !paused;
+				}
 				if (result!=0)
 				{
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
 				}
 			}
 		}
-		
+
 		else if(workMode.equals(MilWorkMode.eMilWorkModeMT))
 		{
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
-				
-				result = (pause) ? mtstop() : mtstartx(0, (CX_CONT | CX_NOINT | CX_NOSIG));
-				
+
+				result = (pause) ? mtstop() : mtstartx(mtLastBase, (CX_CONT | CX_NOINT | CX_NOSIG));
+
 				if (result!=0)
 				{
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
@@ -669,8 +675,8 @@ public class Elcus1553Device {
 						Msg.answerWord = (short) bcgetw(2);
 						Msg.dataWords[0] = (short) bcgetw(1);
 						break;
-						default :
-							break;
+					default :
+						break;
 					}
 
 
@@ -678,7 +684,7 @@ public class Elcus1553Device {
 					{
 						if (!packetsForSendBC.isEmpty())
 							packetsForSendBC.remove(0);
-						
+
 						Msg.status = EMilPacketStatus.eRECEIVED;
 					}
 					if (eventData.nInt==2)
@@ -724,7 +730,7 @@ public class Elcus1553Device {
 						pBuffer.setShort(0, msg.commandWord);
 						for (int i=0;i<32;i++)
 							pBuffer.setShort(i+1, msg.dataWords[i]);
-						
+
 						bcdefbase(0);
 						bcputblk(0, pBuffer, (short)64);
 						bcdefbus(msg.bus.toInt());
@@ -823,7 +829,7 @@ public class Elcus1553Device {
 	{
 		int events = 0;
 		int waitingtime = 10;
-		int mtLastBase = 0;
+		
 		int res=0;
 		TTmkEventData eventData = new TTmkEventData();
 		int sw;
@@ -1269,7 +1275,14 @@ public class Elcus1553Device {
 
 	int mtstartx(int mtBase, int mtCtrlCode)
 	{
-		return bcstartx(mtBase,mtCtrlCode);
+		int res = 0;
+		if (paused)
+		{
+			res= bcstartx(mtBase,mtCtrlCode);
+			if (res == 0)
+				paused=false;
+		}
+		return res;
 	}
 	int bcstartx(int bcBase, int bcCtrlCode)
 	{
@@ -1298,7 +1311,15 @@ public class Elcus1553Device {
 
 	int mtstop()
 	{
-		return bcstop();
+		int res = 0;
+		if (!paused)
+		{
+			res= bcstop();
+			if (res == 0)
+				paused=true;
+		}
+		return res;
+		 
 	}
 	int bcstop()
 	{

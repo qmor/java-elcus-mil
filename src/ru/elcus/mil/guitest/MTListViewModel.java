@@ -27,6 +27,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	private static final long serialVersionUID = 4887147732114211340L;
 	
 	private static final String urlDB = "jdbc:sqlite:/home/bvv/java-elcus-mil/databases/monitor.db";
+	private static final String tablename = "metadata";
+	
 	private Connection conn;
 
 	MTListViewModel()
@@ -88,10 +90,11 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	
 	DefaultListModel<Mil1553Packet> getListByQuery(String sql)
 	{
+		sql = "SELECT * FROM " + tablename + " WHERE " + sql;
 		try (Statement stmt  = conn.createStatement();
             ResultSet rs    = stmt.executeQuery(sql)){
             
-        	DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
+			DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
         	
         	
         	SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz YYYY", Locale.ENGLISH);
