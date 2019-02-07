@@ -2,7 +2,6 @@ package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -583,7 +582,6 @@ public class Elcus1553Device {
 			{				
 				if (subaddressMode!=0 && subaddressMode!=31)
 				{
-					System.out.print(subaddressMode);
 					if (wordcountModeCode == 0) wordcountModeCode=32;
 					rtdefsubaddr(RT_TRANSMIT,subaddressMode);
 					while(rtbusy()==1)
