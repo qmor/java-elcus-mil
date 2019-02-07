@@ -32,7 +32,7 @@ import javax.swing.JTextArea;
 public class MTTest {
 
 	private JFrame frame;
-
+	
 	/**
 	 * Launch the application.
 	 */
@@ -58,7 +58,7 @@ public class MTTest {
 	public MTTest() {
 		initialize();
 	}
-
+	
 	/**
 	 * Initialize the contents of the frame.
 	 */
@@ -95,7 +95,7 @@ public class MTTest {
 					}  
 					
 					device.addMsgReceivedListener((msg)->{
-						model.addElement(msg);
+						model.insertElementAndAddToList(msg);
 					});
 				} 
 				else
@@ -142,6 +142,22 @@ public class MTTest {
 		list.setModel(model);
 		scrollPane.setViewportView(list);
 		
+		btnSql.addMouseListener(new MouseAdapter() {
+			
+			public void mouseClicked(MouseEvent e)
+			{
+				try {
+					device.setPause(true);
+				} catch (Eclus1553Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				model.removeAllElements();
+				list.setModel(model.getListByQuery(textArea.getText()));
+			}
+			
+		});
+		
 		list.addMouseListener(new MouseAdapter(){
 			public void mouseClicked(MouseEvent e)
 			{
@@ -155,7 +171,7 @@ public class MTTest {
 							
 							window.l_AW.setText(String.format("%04x", list.getSelectedValue().answerWord));;
 							window.l_CW.setText(String.format("%04x ", list.getSelectedValue().commandWord));
-							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus.toInt()));
+							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus));
 							window.l_date.setText(String.valueOf(list.getSelectedValue().date));
 							window.l_format.setText(String.valueOf(list.getSelectedValue().format));
 							window.l_status.setText(String.valueOf(list.getSelectedValue().status));

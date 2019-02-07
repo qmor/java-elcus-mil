@@ -1,5 +1,7 @@
 package ru.elcus.mil.guitest;
 
+
+import java.io.BufferedReader;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -7,6 +9,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import javax.swing.DefaultListModel;
 import javax.swing.ListModel;
@@ -37,42 +43,43 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         }
 	}
 	
+	/*
+	 * 
+	 *  {[
+	 *  	
+	 *  ]}
+	 * 
+	 * */
+	
 	void insertElementAndAddToList(Mil1553Packet packet)
 	{
 		addElement(packet);
 		
 		String metasql = "INSERT INTO metadata "
-				+ "(`CommandWord`, `AnswerWord`, `Date`, `Bus`, `Format`, `Status`) "
+				+ "(`CommandWord`, `AnswerWord`, `Date`, `Bus`, `Format`, `Status`, `DataWords`) "
 				+ "VALUES "
-				+ "(?, ?, ?, ?, ?, ?)";
+				+ "(?, ?, ?, ?, ?, ?, ?)";
 		
 		try (PreparedStatement pstmt = conn.prepareStatement(metasql, Statement.RETURN_GENERATED_KEYS)) {
             
 			pstmt.setShort(1, packet.commandWord);
 			pstmt.setShort(2, packet.answerWord);
-			pstmt.setDate(3, (Date) packet.date);
+			pstmt.setString(3,  String.valueOf(packet.date));
 			pstmt.setString(4, String.valueOf(packet.bus));
 			pstmt.setString(5, String.valueOf(packet.format));
 			pstmt.setString(6, String.valueOf(packet.status));
-			
+		
+			String DataWords = "";
+			int len = packet.dataWords.length;
+			for(int i = 0; i < len; i++)
+			{
+				DataWords += String.valueOf(packet.dataWords[i]);
+				if(i < len - 1)
+					DataWords += ",";
+			}
+			pstmt.setString(7, DataWords);
+				
             pstmt.executeUpdate();
-            
-            String datawordsql = "INSERT INTO datawords (`id_metadata`, `DataWord`) VALUES(?, ?)";
-            
-            ResultSet rs = pstmt.getGeneratedKeys();
-            
-            try(PreparedStatement pstmt2 = conn.prepareStatement(datawordsql, Statement.RETURN_GENERATED_KEYS))
-    		{
-            	for(int i = 0; i < packet.dataWords.length; i++)
-            	{
-            		pstmt2.setInt(rs.getInt("id_metadata"), packet.dataWords[i]);
-            		pstmt2.executeUpdate();
-            	}
-    		}
-            catch(SQLException e)
-            {
-            	System.out.println(e.getMessage());
-            }
             
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -81,28 +88,43 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	
 	DefaultListModel<Mil1553Packet> getListByQuery(String sql)
 	{
-        
-        try (Statement stmt  = conn.createStatement();
-             ResultSet rs    = stmt.executeQuery(sql)){
+		try (Statement stmt  = conn.createStatement();
+            ResultSet rs    = stmt.executeQuery(sql)){
             
         	DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
         	
-        	Mil1553Packet packet = new Mil1553Packet();
         	
-            // loop through the result set
+        	SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz YYYY", Locale.ENGLISH);
+        	
+        	// loop through the result set
             while (rs.next()) {
+            	Mil1553Packet packet = new Mil1553Packet();
             	
             	packet.commandWord = rs.getShort("CommandWord");
             	packet.answerWord = rs.getShort("AnswerWord");
-            	packet.date = rs.getDate("Date");
+            	
+            	try {
+					packet.date = format.parse(rs.getString("Date"));
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+            	
+            	System.out.println(packet.date);
+            	
             	packet.bus = EBus.valueOf(rs.getString("Bus"));
             	packet.format = EMilFormat.valueOf(rs.getString("Format"));
             	packet.status = EMilPacketStatus.valueOf(rs.getString("Status"));
             	
-            	/*System.out.println(rs.getInt("id") +  "\t" + 
-                                   rs.getString("name") + "\t" +
-                                   rs.getDouble("capacity"));*/
+            	int i = 0;
+            	for(String el : rs.getString("DataWords").split(","))
+            		packet.dataWords[i++] = Short.parseShort(el);
+            	
+            	list.addElement(packet);
             }
+            
+            return list;
+            
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
