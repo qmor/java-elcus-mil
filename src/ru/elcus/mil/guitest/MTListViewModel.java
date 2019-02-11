@@ -26,7 +26,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 
 	private static final long serialVersionUID = 4887147732114211340L;
 	
-	private static final String urlDB = "jdbc:sqlite:/home/bvv/java-elcus-mil/databases/monitor.db";
+	private static final String urlDB = "jdbc:sqlite:databases/monitor.db";
 	private static final String tablename = "metadata";
 	
 	private Connection conn;
@@ -45,14 +45,6 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         }
 	}
 	
-	/*
-	 * 
-	 *  {[
-	 *  	
-	 *  ]}
-	 * 
-	 * */
-	
 	void insertElementAndAddToList(Mil1553Packet packet)
 	{
 		addElement(packet);
@@ -64,8 +56,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		
 		try (PreparedStatement pstmt = conn.prepareStatement(metasql, Statement.RETURN_GENERATED_KEYS)) {
             
-			pstmt.setShort(1, packet.commandWord);
-			pstmt.setShort(2, packet.answerWord);
+			pstmt.setString(1, Integer.toHexString(packet.commandWord));
+			pstmt.setString(2, Integer.toHexString(packet.answerWord));
 			pstmt.setString(3,  String.valueOf(packet.date));
 			pstmt.setString(4, String.valueOf(packet.bus));
 			pstmt.setString(5, String.valueOf(packet.format));
@@ -88,9 +80,11 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         }
 	}
 	
-	DefaultListModel<Mil1553Packet> getListByQuery(String sql)
+	DefaultListModel<Mil1553Packet> getListByQuery(String where)
 	{
-		sql = "SELECT * FROM " + tablename + " WHERE " + sql;
+		String sql = "SELECT * FROM " + tablename;
+		if(!where.isEmpty())
+			sql += " WHERE " + where;
 		try (Statement stmt  = conn.createStatement();
             ResultSet rs    = stmt.executeQuery(sql)){
             
