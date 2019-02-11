@@ -12,7 +12,6 @@ import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
 
 import javax.swing.JSpinner;
-import javax.swing.JTable;
 import javax.swing.JLabel;
 import javax.swing.JButton;
 import javax.swing.JList;
@@ -22,11 +21,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionEvent;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
 
-import javax.swing.JComboBox;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.JTextArea;
 
@@ -39,12 +34,10 @@ public class MTTest {
 	{
 		mtStart,
 		mtStop,
-		SqlQuery
+		SqlQuery,
+		disabled
 	}
 	
-	/**
-	 * Launch the application.
-	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -66,6 +59,7 @@ public class MTTest {
 	
 	public MTTest() {
 		initialize();
+		btnController(btnStatus.disabled);
 	}
 	
 	private void btnController(btnStatus st)
@@ -77,15 +71,48 @@ public class MTTest {
 				btnSql.setEnabled(false);
 				btnStop.setEnabled(true);
 				
+				if(device != null)
+					try {
+						device.setPause(false);
+					} catch (Eclus1553Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				
 				break;
 			}
+			
 			case mtStop: {
 				btnStart.setEnabled(true);
 				btnStop.setEnabled(false);
 				btnSql.setEnabled(true);
 				
+				try {
+					device.setPause(true);
+				} catch (Eclus1553Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
 				break;
 			}
+			
+			case disabled:
+				btnStop.setEnabled(false);
+				break;
+				
+			case SqlQuery: {
+				if(device != null)
+					try {
+						device.setPause(true);
+					} catch (Eclus1553Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				
+				break;
+			}
+				
 		}
 	}
 	
@@ -101,7 +128,7 @@ public class MTTest {
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][grow][][grow][grow]"));
 		
-		JLabel label = new JLabel("Выбор шины");
+		JLabel label = new JLabel("Р’С‹Р±РѕСЂ С€РёРЅС‹");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(label, "cell 0 0");
 		
@@ -110,11 +137,14 @@ public class MTTest {
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(spinner, "cell 1 0");
 		
-		btnStart = new JButton("Запуск монитора");
+		JList<Mil1553Packet> list= new JList();
+		
+		btnStart = new JButton("Р—Р°РїСѓСЃС‚РёС‚СЊ РјРѕРЅРёС‚РѕСЂ");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				btnController(btnStatus.mtStart);
+				
 				if (device==null)
 				{
 					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));
@@ -129,39 +159,25 @@ public class MTTest {
 					device.addMsgReceivedListener((msg)->{
 						model.insertElementAndAddToList(msg);
 					});
-				} 
-				else
-				{
-					try {
-						device.setPause(false);
-					} catch (Eclus1553Exception e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
 				}
+				
+				list.setModel(model);
 			}
 		});
 		panel.add(btnStart, "cell 0 1");
 		
-		btnStop = new JButton("Остановить монитор");
-		btnStop.setEnabled(false);
+		btnStop = new JButton("РћСЃС‚Р°РЅРѕРІРёС‚СЊ РјРѕРЅРёС‚РѕСЂ");
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
 				btnController(btnStatus.mtStop);
-				try {
-					device.setPause(true);
-				} catch (Eclus1553Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
 			}
 		});
 		
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(btnStop, "cell 1 1");
 		
-		btnSql = new JButton("SQL запрос");
+		btnSql = new JButton("SQL Р·Р°РїСЂРѕСЃ");
 		panel.add(btnSql, "cell 0 2 2 1");
 		
 		JTextArea textArea = new JTextArea();
@@ -171,19 +187,12 @@ public class MTTest {
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 4 2 3,grow");
 		
-		JList<Mil1553Packet> list= new JList();
 		list.setModel(model);
 		scrollPane.setViewportView(list);
 		
 		btnSql.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
-				/*try {
-					device.setPause(true);
-				} catch (Eclus1553Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}*/
 				model.removeAllElements();
 				try
 				{

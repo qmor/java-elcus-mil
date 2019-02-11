@@ -1,21 +1,15 @@
 package ru.elcus.mil.guitest;
 
 
-import java.io.BufferedReader;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
+import java.util.Date;
 
 import javax.swing.DefaultListModel;
-import javax.swing.ListModel;
 
 import ru.elcus.mil.EMilPacketStatus;
 import ru.elcus.mil.Mil1553Packet;
@@ -56,9 +50,9 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		
 		try (PreparedStatement pstmt = conn.prepareStatement(metasql, Statement.RETURN_GENERATED_KEYS)) {
             
-			pstmt.setString(1, Integer.toHexString(packet.commandWord));
-			pstmt.setString(2, Integer.toHexString(packet.answerWord));
-			pstmt.setString(3,  String.valueOf(packet.date));
+			pstmt.setString(1, String.format("%04x", packet.commandWord));
+			pstmt.setString(2, String.format("%04x",packet.answerWord));
+			pstmt.setLong(3, packet.date.getTime());;
 			pstmt.setString(4, String.valueOf(packet.bus));
 			pstmt.setString(5, String.valueOf(packet.format));
 			pstmt.setString(6, String.valueOf(packet.status));
@@ -90,22 +84,19 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             
 			DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
         	
-        	
-        	SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz YYYY", Locale.ENGLISH);
-        	
+			
+			
+			Mil1553Packet packet;
+			Date d;
+			
         	// loop through the result set
             while (rs.next()) {
-            	Mil1553Packet packet = new Mil1553Packet();
+            	packet = new Mil1553Packet();
+            	packet.commandWord = Short.parseShort(rs.getString("CommandWord"), 16);
+            	packet.answerWord = Short.parseShort(rs.getString("AnswerWord"), 16);
             	
-            	packet.commandWord = rs.getShort("CommandWord");
-            	packet.answerWord = rs.getShort("AnswerWord");
-            	
-            	try {
-					packet.date = format.parse(rs.getString("Date"));
-				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+            	d = new Date(rs.getLong("Date"));
+            	packet.date = d;
             	
             	System.out.println(packet.date);
             	
