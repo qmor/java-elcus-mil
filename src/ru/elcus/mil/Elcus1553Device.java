@@ -521,12 +521,14 @@ public class Elcus1553Device {
 	}
 
 	private List<IMilMsgReceivedListener> msgReceivedListeners = new ArrayList<>();
-	private List<Mil1553Packet> packetsForSendBC = new ArrayList<>();
+	private List<DebugReceivedListener> DebugReceivedListeners = new ArrayList<>();
+	private List<Mil1553Packet> packetsForSendBC = new ArrayList<>();	
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
+	
 	public MilWorkMode getWorkMode() {
 		return workMode;
 	}
@@ -536,6 +538,12 @@ public class Elcus1553Device {
 	{
 		msgReceivedListeners.add(listener);
 	}
+	
+	public void addDebugReceivedListener(DebugReceivedListener listener)
+	{
+		DebugReceivedListeners.add(listener);
+	}
+	
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
 		if (workMode==MilWorkMode.eMilWorkModeRT)
@@ -586,7 +594,10 @@ public class Elcus1553Device {
 					rtdefsubaddr(RT_TRANSMIT,subaddressMode);
 					while(rtbusy()==1)
 					{
-						//Debug() << "wait for rtbusy" << msg_show;
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("Wait for rtbusy");
+						}
 					}
 					rtSendPBuffer.write(0, packet.dataWords, 0, 32);
 					rtputblk(0,rtSendPBuffer,wordcountModeCode);
@@ -621,7 +632,7 @@ public class Elcus1553Device {
 			events = tmkwaitevents(1<<cardNumber, 50);
 			if (events==(1<<cardNumber))
 			{
-				synchronized (syncObject) {					
+				synchronized (syncObject) {	
 					tmkselect();
 					tmkgetevd(eventData);
 					bcdefbase(0);
@@ -659,7 +670,6 @@ public class Elcus1553Device {
 						default :
 							break;
 					}
-
 					if (eventData.nInt==1)
 					{
 						if (!packetsForSendBC.isEmpty())
@@ -675,26 +685,36 @@ public class Elcus1553Device {
 						{
 							packetsForSendBC.clear();
 						}
-	                    //if (eventData.union.bc.wResult==S_ERAO_MASK)
-	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error in a field of the address received RW is found out" << msg_show;
-	
-	                    //else if (eventData.union.bc.wResult == S_MEO_MASK)
-	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error of a code 'Manchester - 2' is found out at answer RT" << msg_show;
-	
-						//else if (eventData.union.bc.wResult == S_EBC_MASK)
-	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The error of the echo - control over transfer BC is found out" << msg_show;
-	
-	                    //else if (eventData.union.bc.wResult == S_TO_MASK)
-	                        //Error()  <<"Elcus1553Device::ListenLoopBC() It is not received the answer from RT" << msg_show;
-	
-	                    //else if (eventData.union.bc.wResult == S_IB_MASK)
-	                        //Error()  <<"Elcus1553Device::ListenLoopBC() The established bits in received RW are found out" << msg_show;						 
-					}
-					
+	                    if (eventData.union.bc.wResult==S_ERAO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error in a field of the address received RW is found out");
+							}	
+	                    else if (eventData.union.bc.wResult == S_MEO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error of a code 'Manchester - 2' is found out at answer RT");
+							}	                        	
+						else if (eventData.union.bc.wResult == S_EBC_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error of the echo - control over transfer BC is found out");
+							}	
+	                    else if (eventData.union.bc.wResult == S_TO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("It is not received the answer from RT");
+							}	
+	                    else if (eventData.union.bc.wResult == S_IB_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The established bits in received RW are found out");
+							}
+					}	
 					for (IMilMsgReceivedListener listener: msgReceivedListeners)
 					{
 						listener.msgReceived(Msg);
-					}
+					}	
 				}
 			}
 			if (!packetsForSendBC.isEmpty())
@@ -743,7 +763,11 @@ public class Elcus1553Device {
 					}
 					else
 					{
-						//Debug() << "Elcus1553Device::ProcessBC: exchange format is not realized yet" << msg_show;
+						packetsForSendBC.remove(0);
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("Exchange format is not realized yet");
+						}	
 					}															
 				}
 			}
@@ -778,7 +802,7 @@ public class Elcus1553Device {
 
 					}
 					else if (eventData.nInt == 2)//rtIntErr
-					{
+					{						
 						//Info() << L"RT has found out a error in the command addressed to it "<< QString().sprintf("%04X",tmkEvD.rt.wStatus) << msg_show;
 						//Info() << "Word of a condition RT: " << QString().sprintf("%04X", tmkEvD.rt.wCmd) << msg_show;
 					}

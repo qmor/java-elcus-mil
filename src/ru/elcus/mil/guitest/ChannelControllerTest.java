@@ -102,15 +102,13 @@ public class ChannelControllerTest {
 		
 		GroupLayout gl_panel_1 = new GroupLayout(panel_1);
 		gl_panel_1.setHorizontalGroup(
-			gl_panel_1.createParallelGroup(Alignment.LEADING)
-				.addGroup(Alignment.TRAILING, gl_panel_1.createSequentialGroup()
-					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-					.addComponent(line1)
-					.addContainerGap())
-				.addGroup(gl_panel_1.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(line2)
-					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+			gl_panel_1.createParallelGroup(Alignment.TRAILING)
+				.addGroup(Alignment.LEADING, gl_panel_1.createSequentialGroup()
+					.addGap(23)
+					.addGroup(gl_panel_1.createParallelGroup(Alignment.TRAILING)
+						.addComponent(line2)
+						.addComponent(line1))
+					.addContainerGap(27, Short.MAX_VALUE))
 		);
 		gl_panel_1.setVerticalGroup(
 			gl_panel_1.createParallelGroup(Alignment.LEADING)
@@ -119,7 +117,7 @@ public class ChannelControllerTest {
 					.addComponent(line1)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(line2)
-					.addContainerGap(215, Short.MAX_VALUE))
+					.addContainerGap(232, Short.MAX_VALUE))
 		);
 		panel_1.setLayout(gl_panel_1);
 		
@@ -133,9 +131,11 @@ public class ChannelControllerTest {
 		JButton btnSend = new JButton("Send");
 		panel.add(btnSend, "cell 0 2,growx");
 		btnSend.setFont(new Font("Dialog", Font.BOLD, 14));
+		list.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		btnSend.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent e) {	
+				modelPacket.clear();
 				if (device==null)
 				{
 					device = new Elcus1553Device(Integer.parseInt(spinner.getValue().toString()));	
@@ -143,15 +143,18 @@ public class ChannelControllerTest {
 						device.initAs(MilWorkMode.eMilWorkModeBC);
 					} catch (Eclus1553Exception e1) {
 						e1.printStackTrace();
-					}	
+					}										
 					device.addMsgReceivedListener((msg)->{
 						modelPacket.addElement(msg.toString());
-					});	
+					});	 
+					device.addDebugReceivedListener((msg)->{
+						modelPacket.addElement(msg);
+					});
 				}
 				Mil1553Packet packet = model.getPacket();
 				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;
-				device.sendPacket(packet);	
-			}
+				device.sendPacket(packet);
+			}			
 		});
 	}
 	
@@ -187,14 +190,14 @@ public class ChannelControllerTest {
 				try {
 					packet.commandWord=Short.parseShort(aValue.toString(),16);
 				} catch(NumberFormatException e) {
-					System.out.print(e.getMessage()+"\n");
+					modelPacket.addElement(e.getMessage()+"\n");
 				}
 				return;
 			}
 			try {
 				packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
 			} catch(NumberFormatException e) {
-				System.out.print(e.getMessage()+"\n");
+				modelPacket.addElement(e.getMessage()+"\n");
 			}
 			return;
 		}
