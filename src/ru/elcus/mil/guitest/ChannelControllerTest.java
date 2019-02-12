@@ -80,7 +80,7 @@ public class ChannelControllerTest {
 		panel.add(lblCardNumber, "cell 0 0,growx");
 		
 		JSpinner spinner = new JSpinner(new SpinnerNumberModel(0,0,100,1));
-		panel.add(spinner, "cell 1 0");
+		panel.add(spinner, "cell 1 0,alignx center");
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JScrollPane scrollPane_1 = new JScrollPane();

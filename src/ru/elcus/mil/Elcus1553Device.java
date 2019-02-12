@@ -784,7 +784,7 @@ public class Elcus1553Device {
 		Pointer pBuffer = new Memory(32*2);
 		while (threadRunning)
 		{
-			events = tmkwaitevents(1 << cardNumber, waitingtime);
+			events = tmkwaitevents(1 << cardNumber, waitingtime);	
 			if (events == (1 << cardNumber))
 			{
 				synchronized (syncObject) {
