@@ -12,6 +12,7 @@ public class Mil1553Packet {
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
+	public String decodeHTMLString;
 	public Mil1553Packet() {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{

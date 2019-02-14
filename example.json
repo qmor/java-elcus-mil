@@ -5,6 +5,11 @@
 		"name":"ЗД1",
 		"class":"ru.vniiem.mildecoders.MBOKZ2V",
 		"rt":"9"
+	},
+	  	{
+		"name":"ЗД2",
+		"class":"ru.vniiem.mildecoders.MBOKZ2V",
+		"rt":"10"
 	}
   ]
 }
