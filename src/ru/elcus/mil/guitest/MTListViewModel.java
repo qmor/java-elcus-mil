@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.DefaultListModel;
 
@@ -15,6 +17,7 @@ import ru.elcus.mil.EMilPacketStatus;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
+import ru.elcus.mildecoders.IMil1553Decoder;
 
 public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 
@@ -24,7 +27,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	private static final String tablename = "metadata";
 	
 	private Connection conn;
-
+	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
 	MTListViewModel()
 	{
 		conn = null;
@@ -38,9 +41,17 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             System.out.println(e.getMessage());
         }
 	}
+	public void addDecoder(IMil1553Decoder decoder)
+	{
+		decoders.put(decoder.getDeviceRT(), decoder);
+	}
 	
 	void insertElementAndAddToList(Mil1553Packet packet)
 	{
+		if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
+		{
+			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
+		}
 		addElement(packet);
 		
 		String metasql = "INSERT INTO metadata "

@@ -1,29 +1,39 @@
 package ru.elcus.mil.guitest;
 
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+
+import org.apache.logging.log4j.Level;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import net.miginfocom.swing.MigLayout;
 import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
+import ru.elcus.mildecoders.ClassByNameHelper;
+import ru.elcus.mildecoders.IMil1553Decoder;
+import ru.elcus.mildecoders.Log;
 
-import javax.swing.JSpinner;
-import javax.swing.JLabel;
-import javax.swing.JButton;
-import javax.swing.JList;
-import javax.swing.JScrollPane;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.ActionEvent;
-import java.awt.Font;
-
-import javax.swing.SpinnerNumberModel;
-import javax.swing.JTextArea;
 
 public class MTTest {
 
@@ -42,7 +52,7 @@ public class MTTest {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					MTTest window = new MTTest();
+					MTTest window = new MTTest(args);
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -57,10 +67,53 @@ public class MTTest {
 	private Elcus1553Device device;
 	MTListViewModel model = new MTListViewModel();
 	
-	public MTTest() {
+	public MTTest(String[] args) {
 		initialize();
 		btnController(btnStatus.disabled);
+		if (args.length>0)
+			loadJSON(args[0]);
 	}
+	
+	
+	private void loadJSON(String jsonFileName)
+	{
+		File jsonFile = new File(jsonFileName);
+		if (!jsonFile.exists())
+			return;
+		String content="";
+		try {
+			content = new String(Files.readAllBytes(Paths.get(jsonFile.toString())), "UTF-8");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+
+		JSONObject json = new JSONObject(content);
+
+		
+		JSONArray array= json.getJSONArray("decoders");
+		ClassByNameHelper cbn = new ClassByNameHelper();
+		for (Object o : array)
+		{
+			if (o instanceof JSONObject)
+			{
+				JSONObject jso = (JSONObject)o;
+				String classname = jso.getString("class");
+				Object inst = cbn.getInstanceByName(classname);
+				if (inst!=null)
+				{
+					if (inst instanceof IMil1553Decoder)
+					{
+						IMil1553Decoder rt = (IMil1553Decoder)inst;
+						rt.initDecoder(jso.getString("name"), jso.getInt("rt"));
+						model.addDecoder(rt);
+					}
+				}
+			}
+		}
+
+	}
+	
 	
 	private void btnController(btnStatus st)
 	{

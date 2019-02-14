@@ -1,0 +1,10 @@
+{
+  "decoders":
+  [
+  	{
+		"name":"ЗД1",
+		"class":"ru.vniiem.mildecoders.MBOKZ2V",
+		"rt":"9"
+	}
+  ]
+}
