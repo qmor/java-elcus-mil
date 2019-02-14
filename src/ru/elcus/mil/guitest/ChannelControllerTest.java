@@ -55,6 +55,7 @@ public class ChannelControllerTest {
 	 * Create the application.
 	 */
 	private Elcus1553Device device;
+	String column_names[]= {"Title","Code"};
 	TableModel model = new TableModel();
 	DefaultListModel<String> modelPacket = new DefaultListModel<String>();
 	
@@ -131,7 +132,6 @@ public class ChannelControllerTest {
 		JButton btnSend = new JButton("Send");
 		panel.add(btnSend, "cell 0 2,growx");
 		btnSend.setFont(new Font("Dialog", Font.BOLD, 14));
-		list.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {	
@@ -174,11 +174,22 @@ public class ChannelControllerTest {
 		
 		@Override
 		public int getColumnCount() {
-			return 1;
-		}		
+			return 2;
+		}	
 		
+        @Override 
+        public String getColumnName(int index) { 
+            return column_names[index]; 
+        } 
+        
 		@Override
 		public Object getValueAt(int row, int column) {			
+			if(row == 0 && column==0){
+				return "Command word";
+			}
+			if(column!=1){
+				return "Data word ["+row+"]";
+			}
 			if (row == 0)
 				return Integer.toHexString(packet.commandWord).toUpperCase();
 			return Integer.toHexString(packet.dataWords[row-1]).toUpperCase();

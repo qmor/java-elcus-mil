@@ -551,11 +551,11 @@ public class Elcus1553Device {
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
-					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
 				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
 				if (result!=0)
 				{
-					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setPause() "+result); 
 				}
 			}
 		}
@@ -777,14 +777,14 @@ public class Elcus1553Device {
 	private void listenLoopRT()
 	{
 		int events = 0;
-		int waitingtime = 10;
+		int waitingtime = 50;
 		int res=0;
 		Mil1553Packet Msg = new Mil1553Packet();
 		TTmkEventData eventData = new TTmkEventData();
 		Pointer pBuffer = new Memory(32*2);
 		while (threadRunning)
 		{
-			events = tmkwaitevents(1 << cardNumber, waitingtime);	
+			events = tmkwaitevents(1 << cardNumber, waitingtime);
 			if (events == (1 << cardNumber))
 			{
 				synchronized (syncObject) {
@@ -792,7 +792,7 @@ public class Elcus1553Device {
 					tmkgetevd(eventData);
 					if (eventData.nInt == 1)//rtIntCmd
 					{
-						Msg.commandWord = eventData.union.rt.wCmd;
+						Msg.commandWord = eventData.union.rt.wCmd; 
 						Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
 
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
@@ -802,9 +802,12 @@ public class Elcus1553Device {
 
 					}
 					else if (eventData.nInt == 2)//rtIntErr
-					{						
-						//Info() << L"RT has found out a error in the command addressed to it "<< QString().sprintf("%04X",tmkEvD.rt.wStatus) << msg_show;
-						//Info() << "Word of a condition RT: " << QString().sprintf("%04X", tmkEvD.rt.wCmd) << msg_show;
+					{			
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("RT has found out a error in the command addressed to it "+String.format("%04X",eventData.union.rt.wStatus));
+							listener.msgReceived("Word of a condition RT: "+String.format("%04X",eventData.union.rt.wCmd));
+						}
 					}
 					else if (eventData.nInt == 3)//rtIntData
 					{
