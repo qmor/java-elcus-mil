@@ -2,6 +2,7 @@ package ru.elcus.mil.guitest;
 
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,24 +24,81 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 
 	private static final long serialVersionUID = 4887147732114211340L;
 	
-	private static final String urlDB = "jdbc:sqlite:databases/monitor.db";
+	private String dbFolder;
 	private static final String tablename = "metadata";
 	
 	private Connection conn;
 	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
-	MTListViewModel()
+	
+	MTListViewModel(String dbFolder)
 	{
-		conn = null;
-		try {
+		this.dbFolder = "jdbc:sqlite:" + dbFolder;
+	}
+	
+	public boolean checkConn()
+	{
+		return (conn != null) ? true : false;
+	}
+	
+	public void setConnection(String dbname)
+	{
+        try {
+            // db parameters
+            String url = dbFolder + dbname;
             // create a connection to the database
-            conn = DriverManager.getConnection(urlDB);
+            conn = DriverManager.getConnection(url);
             
             System.out.println("Connection to SQLite has been established.");
             
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+        } 
+	}
+	
+	public String createNewDBConn()
+	{
+		String name = String.valueOf(System.currentTimeMillis()) + ".db";
+		String url = dbFolder + name;
+		
+        try (Connection cn = DriverManager.getConnection(url);
+        		Statement stmt = cn.createStatement()) {
+        	conn = cn;
+        	if (conn != null) {
+                DatabaseMetaData meta = conn.getMetaData();
+                System.out.println("The driver name is " + meta.getDriverName());
+                System.out.println("A new database has been created.");
+              
+                String sql = "CREATE TABLE IF NOT EXISTS metadata (\n"
+                        + "CommandWord,\n"
+                        + "AnswerWord,\n"
+                        + "Date,\n"
+                        + "Bus,\n"
+                        + "Format,\n"
+                        + "Status,\n"
+                        + "DataWords\n"
+                        + ");";
+                
+                stmt.execute(sql);
+        	}
+ 
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        
+        return name;
+	}
+	
+	public void closeConn()
+	{
+		try {
+            if (conn != null) {
+                conn.close();
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
         }
 	}
+	
 	public void addDecoder(IMil1553Decoder decoder)
 	{
 		decoders.put(decoder.getDeviceRT(), decoder);
@@ -109,8 +167,6 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             	d = new Date(rs.getLong("Date"));
             	packet.date = d;
             	
-            	System.out.println(packet.date);
-            	
             	packet.bus = EBus.valueOf(rs.getString("Bus"));
             	packet.format = EMilFormat.valueOf(rs.getString("Format"));
             	packet.status = EMilPacketStatus.valueOf(rs.getString("Status"));
@@ -135,13 +191,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	@Override
 	protected void finalize()
 	{
-		try {
-            if (conn != null) {
-                conn.close();
-            }
-        } catch (SQLException ex) {
-            System.out.println(ex.getMessage());
-        }
+		closeConn();
 	}
 	
 }

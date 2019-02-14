@@ -2,12 +2,12 @@
   "decoders":
   [
   	{
-		"name":"Ð—Ð”1",
+		"name":"ÇÄ1",
 		"class":"ru.vniiem.mildecoders.MBOKZ2V",
 		"rt":"9"
 	},
 	  	{
-		"name":"Ð—Ð”2",
+		"name":"ÇÄ2",
 		"class":"ru.vniiem.mildecoders.MBOKZ2V",
 		"rt":"10"
 	}

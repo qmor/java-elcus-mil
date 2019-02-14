@@ -8,10 +8,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -21,7 +24,6 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 
-import org.apache.logging.log4j.Level;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,13 +34,18 @@ import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
-import ru.elcus.mildecoders.Log;
+import javax.swing.JComboBox;
 
 
 public class MTTest {
 
 	private JFrame frame;
 	private JButton btnStart, btnStop, btnSql;
+	
+	private static final String dbFolder = "databases/";
+	private String[] dbFiles;
+	
+	JComboBox<String> comboBox;
 	
 	enum btnStatus
 	{
@@ -65,9 +72,10 @@ public class MTTest {
 	 * Create the application.
 	 */
 	private Elcus1553Device device;
-	MTListViewModel model = new MTListViewModel();
+	MTListViewModel model = new MTListViewModel(dbFolder);
 	
 	public MTTest(String[] args) {
+		getAllDataBases();
 		initialize();
 		btnController(btnStatus.disabled);
 		if (args.length>0)
@@ -111,7 +119,6 @@ public class MTTest {
 				}
 			}
 		}
-
 	}
 	
 	
@@ -132,6 +139,8 @@ public class MTTest {
 						e.printStackTrace();
 					}
 				
+				comboBox.addItem(model.createNewDBConn());
+				
 				break;
 			}
 			
@@ -147,6 +156,8 @@ public class MTTest {
 					e.printStackTrace();
 				}
 				
+				model.closeConn();
+				
 				break;
 			}
 			
@@ -155,18 +166,24 @@ public class MTTest {
 				break;
 				
 			case SqlQuery: {
-				if(device != null)
-					try {
-						device.setPause(true);
-					} catch (Eclus1553Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
 				
 				break;
 			}
 				
 		}
+	}
+	
+	private void getAllDataBases()
+	{
+		File folder = new File(dbFolder);
+		
+        dbFiles = folder.list(new FilenameFilter() {
+ 
+             @Override public boolean accept(File folder, String name) {
+                 return name.endsWith(".db");
+             }
+            
+         });
 	}
 	
 	/**
@@ -181,7 +198,7 @@ public class MTTest {
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][grow][][grow][grow]"));
 		
-		JLabel label = new JLabel("Р’С‹Р±РѕСЂ С€РёРЅС‹");
+		JLabel label = new JLabel("Выбор шины");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(label, "cell 0 0");
 		
@@ -191,8 +208,10 @@ public class MTTest {
 		panel.add(spinner, "cell 1 0");
 		
 		JList<Mil1553Packet> list= new JList();
+		comboBox = new JComboBox<String>();
 		
-		btnStart = new JButton("Р—Р°РїСѓСЃС‚РёС‚СЊ РјРѕРЅРёС‚РѕСЂ");
+		
+		btnStart = new JButton("Запуск монитора");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -219,7 +238,7 @@ public class MTTest {
 		});
 		panel.add(btnStart, "cell 0 1");
 		
-		btnStop = new JButton("РћСЃС‚Р°РЅРѕРІРёС‚СЊ РјРѕРЅРёС‚РѕСЂ");
+		btnStop = new JButton("Остановка монитора");
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
@@ -230,9 +249,52 @@ public class MTTest {
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(btnStop, "cell 1 1");
 		
-		btnSql = new JButton("SQL Р·Р°РїСЂРѕСЃ");
-		panel.add(btnSql, "cell 0 2 2 1");
+		btnSql = new JButton("SQL запрос");
+		panel.add(btnSql, "cell 0 2");
 		
+		
+		comboBox.setToolTipText("");
+		panel.add(comboBox, "cell 1 2,growx");
+		
+		final String not_selectable_option = "Выбрать БД";
+		
+		comboBox.setModel(new DefaultComboBoxModel<String>() {
+		      /**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+			boolean selectionAllowed = true;
+
+		      @Override
+		      public void setSelectedItem(Object anObject) {
+		        if (!not_selectable_option.equals(anObject)) {
+		          super.setSelectedItem(anObject);
+		        } else if (selectionAllowed) {
+		          // Allow this just once
+		          selectionAllowed = false;
+		          super.setSelectedItem(anObject);
+		        }
+		      }
+	    });
+		
+		comboBox.addItem(not_selectable_option);
+	    for(String f : dbFiles)
+	    	comboBox.addItem(f);
+		
+	    comboBox.addActionListener(new ActionListener() {
+	    	public void actionPerformed(ActionEvent e)
+			{
+				if(!comboBox.getSelectedItem().equals(not_selectable_option))
+				{
+					model.removeAllElements();
+					list.setModel(model);
+					model.closeConn();
+					model.setConnection(comboBox.getSelectedItem().toString());
+					list.setModel(model.getListByQuery(""));
+				}
+			}
+	    });
+	    
 		JTextArea textArea = new JTextArea();
 		panel.add(textArea, "cell 0 3 2 1,grow");
 		
@@ -277,6 +339,7 @@ public class MTTest {
 								window.l_date.setText(String.valueOf(list.getSelectedValue().date));
 								window.l_format.setText(String.valueOf(list.getSelectedValue().format));
 								window.l_status.setText(String.valueOf(list.getSelectedValue().status));
+								window.editorPane.setText(list.getSelectedValue().decodeHTMLString);
 								
 								int numofrws = list.getSelectedValue().dataWords.length;
 								for(int i = 0; i < numofrws; i++)

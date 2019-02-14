@@ -17,28 +17,29 @@ public class ClassByNameHelper {
 			result = ctor.newInstance();
 		} catch (NoSuchMethodException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - РЅРµ РЅР°Р№РґС‘РЅ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ",classname));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - не найдён конструктор по умолчанию",classname));
 		} catch (SecurityException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - SecurityException",classname));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - SecurityException",classname));
 		}
 		catch (ClassNotFoundException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - РєР»Р°СЃСЃ РЅРµ РЅР°Р№РґРµРЅ",classname));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - класс не найден",classname));
 		}
 		catch (InstantiationException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - %s",classname,e.getMessage()));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - %s",classname,e.getMessage()));
 		} catch (IllegalAccessException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - %s",classname,e.getMessage()));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - %s",classname,e.getMessage()));
 		} catch (IllegalArgumentException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - %s",classname,e.getMessage()));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - %s",classname,e.getMessage()));
 		} catch (InvocationTargetException e) 
 		{
-			Log.write(Level.ERROR, String.format("РћС€РёР±РєР° РёРЅСЃС‚Р°РЅС†РёСЂРѕРІР°РЅРёСЏ РєР»Р°СЃСЃР° %s - %s",classname,e.getMessage()));
+			Log.write(Level.ERROR, String.format("Ошибка инстанцирования класса %s - %s",classname,e.getMessage()));
 		}
+
 		return result;
 	}
 }

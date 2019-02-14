@@ -8,6 +8,7 @@ import javax.swing.JLabel;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
+import javax.swing.JEditorPane;
 
 public class MTPacketGUI {
 
@@ -20,6 +21,7 @@ public class MTPacketGUI {
 	JLabel l_bus;
 	DefaultTableModel model;
 	private JTable table;
+	JEditorPane editorPane;
 	
 	/**
 	 * Create the application.
@@ -33,13 +35,13 @@ public class MTPacketGUI {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 405, 400);
+		frame.setBounds(100, 100, 405, 596);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[]{160, 258, 0};
-		gridBagLayout.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 160, 0};
+		gridBagLayout.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 98, 225, 0};
 		gridBagLayout.columnWeights = new double[]{1.0, 1.0, Double.MIN_VALUE};
-		gridBagLayout.rowWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
+		gridBagLayout.rowWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
 		frame.getContentPane().setLayout(gridBagLayout);
 		
 		JLabel lblCommandword = new JLabel("CommandWord:");
@@ -140,6 +142,7 @@ public class MTPacketGUI {
 		
 		JScrollPane scrollPane = new JScrollPane();
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
 		gbc_scrollPane.gridwidth = 2;
 		gbc_scrollPane.fill = GridBagConstraints.BOTH;
 		gbc_scrollPane.gridx = 0;
@@ -151,6 +154,15 @@ public class MTPacketGUI {
 		
 		table = new JTable(model);
 		scrollPane.setViewportView(table);
+		
+		editorPane = new JEditorPane();
+		GridBagConstraints gbc_editorPane = new GridBagConstraints();
+		gbc_editorPane.gridwidth = 2;
+		gbc_editorPane.insets = new Insets(0, 0, 0, 5);
+		gbc_editorPane.fill = GridBagConstraints.BOTH;
+		gbc_editorPane.gridx = 0;
+		gbc_editorPane.gridy = 7;
+		frame.getContentPane().add(editorPane, gbc_editorPane);
 		
 	}
 
