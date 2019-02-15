@@ -55,7 +55,6 @@ public class ChannelControllerTest {
 	 * Create the application.
 	 */
 	private Elcus1553Device device;
-	String column_names[]= {"Title","Code"};
 	TableModel model = new TableModel();
 	DefaultListModel<String> modelPacket = new DefaultListModel<String>();
 	
@@ -159,7 +158,8 @@ public class ChannelControllerTest {
 	}
 	
 	class TableModel extends DefaultTableModel{		
-		private static final long serialVersionUID = -3894503544563437459L;	
+		private static final long serialVersionUID = 1205259912765952013L;
+		private String column_names[]= {"Title","Code"};
 		
 		Mil1553Packet packet = new Mil1553Packet();
 		
@@ -187,7 +187,7 @@ public class ChannelControllerTest {
 			if(row == 0 && column==0){
 				return "Command word";
 			}
-			if(column!=1){
+			if(column != 1){
 				return "Data word ["+row+"]";
 			}
 			if (row == 0)

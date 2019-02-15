@@ -2,7 +2,6 @@ package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.junit.Assert;
@@ -645,27 +644,22 @@ public class Elcus1553Device {
 						bcgetblk(1,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1+cmdcodeWordCount);
-						Msg.date = new Date();
 						break;
 					case CC_FMT_2:
 						bcgetblk(2,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = new Date();
 						break;
 					case CC_FMT_4:
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = new Date();
 						break;
 					case CC_FMT_5:
 						Msg.answerWord = (short) bcgetw(1);
 						Msg.dataWords[0] = (short) bcgetw(2);
-						Msg.date = new Date();
 						break;
 					case CC_FMT_6:
 						Msg.answerWord = (short) bcgetw(2);
 						Msg.dataWords[0] = (short) bcgetw(1);
-						Msg.date = new Date();
 						break;
 						default :
 							break;

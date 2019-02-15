@@ -50,7 +50,6 @@ public class RTTest {
 	 */
 	private Elcus1553Device device;
 	TableModel model = new TableModel();
-	String column_names[]= {"Title","Code"};
 	DefaultListModel<String> modelPacket = new DefaultListModel<String>();
 
 	public RTTest() {
@@ -68,7 +67,7 @@ public class RTTest {
 		
 		JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
-		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][grow][][grow]"));
+		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][grow][][grow]"));
 					
 		JLabel lblCardNumber = new JLabel("Card number:");
 		lblCardNumber.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -77,14 +76,6 @@ public class RTTest {
 		JSpinner card_number = new JSpinner(new SpinnerNumberModel(0,0,100,1));
 		panel.add(card_number, "cell 1 0,alignx center");
 		card_number.setFont(new Font("Dialog", Font.BOLD, 14));
-		
-		JLabel lblSubaddress = new JLabel("Subaddress:");
-		panel.add(lblSubaddress, "cell 0 1");
-		lblSubaddress.setFont(new Font("Dialog", Font.BOLD, 14));
-		
-		JSpinner subaddress = new JSpinner(new SpinnerNumberModel(0,0,100,1));
-		panel.add(subaddress, "cell 1 1,alignx center");
-		subaddress.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton start = new JButton("Start");
 		start.addActionListener(new ActionListener() {
@@ -103,10 +94,11 @@ public class RTTest {
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
 					});
+					modelPacket.addElement("Successful launch");
 				}
 			}
 		});
-		panel.add(start, "cell 0 2,alignx left");
+		panel.add(start, "cell 0 1,alignx left");
 		start.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton stop = new JButton("Stop");
@@ -120,27 +112,31 @@ public class RTTest {
 						e1.printStackTrace();
 					}
 				}
+				else
+				{
+					modelPacket.addElement("The device isn't running");
+				}
 			}
 		});
-		panel.add(stop, "cell 1 2");
+		panel.add(stop, "cell 1 1");
 		stop.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
-		panel.add(scrollPane_1, "flowy,cell 0 3,grow");
+		panel.add(scrollPane_1, "flowy,cell 0 2,grow");
 		
 		JTable table = new JTable(model);
 		scrollPane_1.setViewportView(table);
 		table.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JScrollPane scrollPane = new JScrollPane();
-		panel.add(scrollPane, "cell 0 5,grow");
+		panel.add(scrollPane, "cell 0 4,grow");
 		
 		JList<String> output = new JList<String>(modelPacket);
 		scrollPane.setViewportView(output);
 		output.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton btnPut = new JButton("Put");
-		panel.add(btnPut, "cell 0 4,growx");
+		panel.add(btnPut, "cell 0 3,growx");
 		btnPut.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		btnPut.addActionListener(new ActionListener() {
@@ -168,6 +164,7 @@ public class RTTest {
 	
 	class TableModel extends DefaultTableModel{		
 		private static final long serialVersionUID = -3894503544563437459L;	
+		private String column_names[]= {"Title","Code"};
 		
 		Mil1553Packet packet = new Mil1553Packet();
 		
@@ -195,7 +192,7 @@ public class RTTest {
 			if(row == 0 && column==0){
 				return "Command word";
 			}
-			if(column!=1){
+			if(column != 1){
 				return "Data word ["+row+"]";
 			}
 			if (row == 0)
