@@ -51,11 +51,11 @@ public class RTTest {
 	private Elcus1553Device device;
 	TableModel model = new TableModel();
 	DefaultListModel<String> modelPacket = new DefaultListModel<String>();
-
+	
 	public RTTest() {
 		initialize();
 	}
-
+	
 	/**
 	 * Initialize the contents of the frame.
 	 */
@@ -67,7 +67,7 @@ public class RTTest {
 		
 		JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
-		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][grow][][grow]"));
+		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][grow][][grow]"));
 					
 		JLabel lblCardNumber = new JLabel("Card number:");
 		lblCardNumber.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -76,6 +76,14 @@ public class RTTest {
 		JSpinner card_number = new JSpinner(new SpinnerNumberModel(0,0,100,1));
 		panel.add(card_number, "cell 1 0,alignx center");
 		card_number.setFont(new Font("Dialog", Font.BOLD, 14));
+						
+		JLabel RtAddress_lb = new JLabel("RT address: ");
+		panel.add(RtAddress_lb, "cell 0 1");
+		RtAddress_lb.setFont(new Font("Dialog", Font.BOLD, 14));
+		
+		JSpinner RtAddress = new JSpinner(new SpinnerNumberModel(0,0,100,1));
+		panel.add(RtAddress, "cell 1 1,alignx center");
+		RtAddress.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton start = new JButton("Start");
 		start.addActionListener(new ActionListener() {
@@ -84,7 +92,9 @@ public class RTTest {
 				{
 					device = new Elcus1553Device(Integer.parseInt(card_number.getValue().toString()));	
 					try {
-						device.initAs(MilWorkMode.eMilWorkModeRT);
+						device.setRtAddress(Integer.parseInt(RtAddress.getValue().toString()));
+						device.initAs(MilWorkMode.eMilWorkModeRT);	
+						device.setPause(false);
 					} catch (Eclus1553Exception e1) {
 						e1.printStackTrace();
 					}										
@@ -94,11 +104,20 @@ public class RTTest {
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
 					});
+					modelPacket.addElement("Successful start");
+				}
+				else{
+					try {
+						device.setPause(false);
+					} catch (Eclus1553Exception e1) {
+						e1.printStackTrace();
+					}
 					modelPacket.addElement("Successful launch");
 				}
 			}
 		});
-		panel.add(start, "cell 0 1,alignx left");
+		
+		panel.add(start, "cell 0 2,alignx left");
 		start.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton stop = new JButton("Stop");
@@ -111,6 +130,7 @@ public class RTTest {
 					} catch (Eclus1553Exception e1) {
 						e1.printStackTrace();
 					}
+					modelPacket.addElement("Successful pause");
 				}
 				else
 				{
@@ -118,25 +138,25 @@ public class RTTest {
 				}
 			}
 		});
-		panel.add(stop, "cell 1 1");
+		panel.add(stop, "cell 1 2");
 		stop.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
-		panel.add(scrollPane_1, "flowy,cell 0 2,grow");
+		panel.add(scrollPane_1, "flowy,cell 0 3,grow");
 		
 		JTable table = new JTable(model);
 		scrollPane_1.setViewportView(table);
 		table.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JScrollPane scrollPane = new JScrollPane();
-		panel.add(scrollPane, "cell 0 4,grow");
+		panel.add(scrollPane, "cell 0 5,grow");
 		
 		JList<String> output = new JList<String>(modelPacket);
 		scrollPane.setViewportView(output);
 		output.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		JButton btnPut = new JButton("Put");
-		panel.add(btnPut, "cell 0 3,growx");
+		panel.add(btnPut, "cell 0 4,growx");
 		btnPut.setFont(new Font("Dialog", Font.BOLD, 14));
 		
 		btnPut.addActionListener(new ActionListener() {
@@ -145,7 +165,9 @@ public class RTTest {
 				{
 					device = new Elcus1553Device(Integer.parseInt(card_number.getValue().toString()));	
 					try {
+						device.setRtAddress(Integer.parseInt(RtAddress.getValue().toString()));
 						device.initAs(MilWorkMode.eMilWorkModeRT);
+						device.setPause(false);
 					} catch (Eclus1553Exception e1) {
 						e1.printStackTrace();
 					}										
@@ -158,6 +180,7 @@ public class RTTest {
 				}
 				Mil1553Packet packet = model.getPacket();
 				device.sendPacket(packet);
+				modelPacket.addElement("Successful put");
 			}			
 		});
 	}

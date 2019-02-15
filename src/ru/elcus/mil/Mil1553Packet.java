@@ -12,9 +12,7 @@ public class Mil1553Packet {
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
-	public Mil1553Packet () {
-		date = new Date();
-		}
+	public Mil1553Packet () {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{		
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
