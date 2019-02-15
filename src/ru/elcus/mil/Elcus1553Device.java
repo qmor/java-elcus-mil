@@ -860,10 +860,13 @@ public class Elcus1553Device {
 							mtgetblk(0, pBuffer, 64);
 							short[] buffer = pBuffer.getShortArray(0,64); 
 
-							//buffer[63] = (short)(statusword&0xff);
-							//buffer[58] = (short)sw;
+					
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,(short)sw,(short)statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
+							if ((((sw&0xffff)>>14)&1) == 1)
+							{
+								packet.status = EMilPacketStatus.eFAILED;
+							}
 							packet.status = EMilPacketStatus.eRECEIVED;
 							for (IMilMsgReceivedListener listener: msgReceivedListeners)
 							{

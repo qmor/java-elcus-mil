@@ -161,7 +161,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         	// loop through the result set
             while (rs.next()) {
             	packet = new Mil1553Packet();
-            	packet.commandWord = Short.parseShort(rs.getString("CommandWord"), 16);
+            	packet.commandWord = (short) Integer.parseInt(rs.getString("CommandWord"), 16);
             	packet.answerWord = Short.parseShort(rs.getString("AnswerWord"), 16);
             	
             	d = new Date(rs.getLong("Date"));
