@@ -17,6 +17,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -295,25 +296,32 @@ public class MTTest {
 			switch(st)
 			{
 				case mtStart: {
+					int input = 0;
 					
-					btnStart.setEnabled(false);
-					btnSql.setEnabled(false);
-					btnStop.setEnabled(true);
-					chooseDB.setEnabled(false);
+					if(currDBfile != null)
+						input = JOptionPane.showConfirmDialog(frame, "Есть открытая база. Закрыть и продолжить?", null, JOptionPane.YES_NO_OPTION);
 					
-					if(device != null)
-						setDevicePause(false);
-					
-					String filename = model.createNewDBConn();
-					if(filename != "")
+					if(currDBfile == null || input == 0)
 					{
-						currDBfile = new File(filename);
-						statusDB.setText("Создана БД: " + filename);
-					}
+						btnStart.setEnabled(false);
+						btnSql.setEnabled(false);
+						btnStop.setEnabled(true);
+						chooseDB.setEnabled(false);
 						
-					mtStart();
-					
-					list.setModel(model);
+						if(device != null)
+							setDevicePause(false);
+						
+						String filename = model.createNewDBConn();
+						if(filename != "")
+						{
+							currDBfile = new File(filename);
+							statusDB.setText("Создана БД: " + filename);
+						}
+							
+						mtStart();
+						
+						list.setModel(model);
+					}
 					
 					break;
 				}
