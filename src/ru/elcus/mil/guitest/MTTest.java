@@ -198,7 +198,7 @@ public class MTTest {
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][grow][][grow][grow]"));
 		
-		JLabel label = new JLabel("Выбор шины");
+		JLabel label = new JLabel("Р’С‹Р±РѕСЂ С€РёРЅС‹");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(label, "cell 0 0");
 		
@@ -211,7 +211,7 @@ public class MTTest {
 		comboBox = new JComboBox<String>();
 		
 		
-		btnStart = new JButton("Запуск монитора");
+		btnStart = new JButton("Р—Р°РїСѓСЃРє РјРѕРЅРёС‚РѕСЂР°");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -238,7 +238,7 @@ public class MTTest {
 		});
 		panel.add(btnStart, "cell 0 1");
 		
-		btnStop = new JButton("Остановка монитора");
+		btnStop = new JButton("РћСЃС‚Р°РЅРѕРІРєР° РјРѕРЅРёС‚РѕСЂР°");
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
@@ -249,14 +249,14 @@ public class MTTest {
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(btnStop, "cell 1 1");
 		
-		btnSql = new JButton("SQL запрос");
+		btnSql = new JButton("SQL Р·Р°РїСЂРѕСЃ");
 		panel.add(btnSql, "cell 0 2");
 		
 		
 		comboBox.setToolTipText("");
 		panel.add(comboBox, "cell 1 2,growx");
 		
-		final String not_selectable_option = "Выбрать БД";
+		final String not_selectable_option = "Р’С‹Р±СЂР°С‚СЊ Р‘Р”";
 		
 		comboBox.setModel(new DefaultComboBoxModel<String>() {
 		      /**
