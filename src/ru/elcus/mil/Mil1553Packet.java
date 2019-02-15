@@ -99,6 +99,6 @@ public class Mil1553Packet {
 	
 	@Override
 	public String toString() {
-		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, bus, date);
+		return String.format("CW %04x AW %04x %s %s %tT", commandWord, answerWord, format, bus, date);
 	}
 }

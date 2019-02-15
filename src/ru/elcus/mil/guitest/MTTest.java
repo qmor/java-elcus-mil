@@ -8,11 +8,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Date;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -34,7 +33,6 @@ import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
-import javax.swing.JComboBox;
 
 
 public class MTTest {
@@ -52,6 +50,7 @@ public class MTTest {
 	
 	private JButton chooseDB;
 	private JLabel statusDB;
+	private File currDBfile;
 	
 	enum btnStatus
 	{
@@ -59,8 +58,7 @@ public class MTTest {
 		mtStop,
 		SqlQuery,
 		getPacket,
-		changeDB,
-		disabled
+		changeDB
 	}
 	
 	public static void main(String[] args) {
@@ -78,7 +76,6 @@ public class MTTest {
 	
 	public MTTest(String[] args) {
 		initialize();
-		btnController(btnStatus.disabled);
 		if (args.length>0)
 			loadJSON(args[0]);
 	}
@@ -122,55 +119,6 @@ public class MTTest {
 		}
 	}
 	
-	private void btnController(btnStatus st)
-	{
-		switch(st)
-		{
-			case mtStart: {
-				btnStart.setEnabled(false);
-				btnSql.setEnabled(false);
-				btnStop.setEnabled(true);
-				
-				if(device != null)
-					try {
-						device.setPause(false);
-					} catch (Eclus1553Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				
-				break;
-			}
-			
-			case mtStop: {
-				btnStart.setEnabled(true);
-				btnStop.setEnabled(false);
-				btnSql.setEnabled(true);
-				
-				try {
-					device.setPause(true);
-				} catch (Eclus1553Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				model.closeConn();
-				
-				break;
-			}
-			
-			case disabled:
-				btnStop.setEnabled(false);
-				break;
-				
-			case SqlQuery: {
-				
-				break;
-			}
-				
-		}
-	}
-	
 	private void initialize()
 	{
 		frame = new JFrame();
@@ -199,17 +147,22 @@ public class MTTest {
 		panel.add(btnStart, "cell 0 1");
 		
 		btnStop = new JButton("Остановка монитора");
+		btnStop.setEnabled(false);
 		btnStop.addActionListener(new ActionListenerController(btnStatus.mtStop));
+		
 		
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(btnStop, "cell 1 1");
 		
-		btnSql = new JButton("SQL запрос");
-		panel.add(btnSql, "cell 0 2");
-		
 		chooseDB = new JButton("Выбор БД");
-		panel.add(chooseDB, "cell 1 2");
+		panel.add(chooseDB, "cell 0 2");
 		chooseDB.addActionListener(new ActionListenerController(btnStatus.changeDB));
+		
+		btnSql = new JButton("SQL запрос");
+		btnSql.setEnabled(false);
+		panel.add(btnSql, "cell 1 2");
+		
+		btnSql.addActionListener(new ActionListenerController(btnStatus.SqlQuery));
 		
 		statusDB = new JLabel("База не выбрана. При запуске будет создана новая БД");
 		panel.add(statusDB, "cell 0 3 2 1");
@@ -223,8 +176,6 @@ public class MTTest {
 		
 		list.setModel(model);
 		scrollPane.setViewportView(list);
-		
-		btnSql.addActionListener(new ActionListenerController(btnStatus.SqlQuery));
 		
 		list.addMouseListener(new ActionListenerController(btnStatus.getPacket));
 		
@@ -299,8 +250,6 @@ public class MTTest {
 					model.insertElementAndAddToList(msg);
 				});
 			}
-			
-			list.setModel(model);
 		}
 		
 		private void setDevicePause(boolean mode)
@@ -312,12 +261,28 @@ public class MTTest {
 			}
 		}
 		
-		private void sqlQuery()
+		private String changeDB()
+		{ //testDBmonitor = 1550215139644.db
+			JFileChooser fch = new JFileChooser();
+			fch.setCurrentDirectory(new File(dbFolder));
+			fch.showOpenDialog(frame);
+			currDBfile = fch.getSelectedFile();
+			String filename = null;
+			if(currDBfile != null)
+			{
+				filename = currDBfile.getName();
+				filename = filename.substring(0, filename.length() - 3);
+			}
+			
+			return filename;
+		}
+		
+		private void setListByQuery(String query)
 		{
 			model.removeAllElements();
 			try
 			{
-				list.setModel(model.getListByQuery(textArea.getText()));
+				list.setModel(model.getListByQuery(query));
 			}
 			catch(java.lang.IllegalArgumentException e1)
 			{
@@ -325,28 +290,30 @@ public class MTTest {
 			}
 		}
 		
-		private void changeDB()
-		{
-			JFileChooser fch = new JFileChooser();
-			fch.setCurrentDirectory(new File(dbFolder));
-			fch.showOpenDialog(frame);
-		}
-		
 		@Override
 		public void actionPerformed(ActionEvent ev) {
 			switch(st)
 			{
 				case mtStart: {
+					
 					btnStart.setEnabled(false);
 					btnSql.setEnabled(false);
 					btnStop.setEnabled(true);
+					chooseDB.setEnabled(false);
 					
 					if(device != null)
 						setDevicePause(false);
 					
-					// comboBox.addItem(model.createNewDBConn());
-					
+					String filename = model.createNewDBConn();
+					if(filename != "")
+					{
+						currDBfile = new File(filename);
+						statusDB.setText("Создана БД: " + filename);
+					}
+						
 					mtStart();
+					
+					list.setModel(model);
 					
 					break;
 				}
@@ -355,25 +322,39 @@ public class MTTest {
 					btnStart.setEnabled(true);
 					btnStop.setEnabled(false);
 					btnSql.setEnabled(true);
+					chooseDB.setEnabled(true);
 					
 					setDevicePause(true);
+					
+					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
 					
 					model.closeConn();
 					
 					break;
 				}
-				
-				case disabled:
-					btnStop.setEnabled(false);
-					break;
 					
-				case SqlQuery:
-					sqlQuery();
+				case SqlQuery: {
+					setListByQuery(textArea.getText());
 					break;
+				}
 				
-				case changeDB: 
-					changeDB();
+				case changeDB: {
+					String filename = changeDB();
+					if(filename != "")
+					{
+						btnSql.setEnabled(true);
+						statusDB.setText(filename + ".db (дата: " + (new Date(Long.valueOf(filename))) + ")");
+					
+						if(model.checkConn())
+							model.closeConn();
+						
+						model.setConnection(filename + ".db");
+						
+						setListByQuery("");
+					}
+						
 					break;
+				}
 					
 			}
 			

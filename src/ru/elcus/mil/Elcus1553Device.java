@@ -132,6 +132,7 @@ public class Elcus1553Device {
 	static final int DNBA =0x10;
 
 	static final int CWB0 =0x20;
+	
 	static final int CWB1 =0x40;
 
 	static final int BC_MODE =0x00;
