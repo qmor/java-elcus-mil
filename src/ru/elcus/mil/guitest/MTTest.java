@@ -56,6 +56,7 @@ public class MTTest {
 	private JButton chooseDB;
 	private JLabel statusDB;
 	private File currDBfile;
+	private JLabel label_1;
 	
 	enum btnStatus
 	{
@@ -132,16 +133,16 @@ public class MTTest {
 		
 		JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
-		panel.setLayout(new MigLayout("", "[grow][grow]", "[][][][][grow][][grow][grow]"));
+		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][grow]"));
 		
-		JLabel label = new JLabel("Выбор шины");
+		JLabel label = new JLabel("Выбор платы");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
-		panel.add(label, "cell 0 0");
+		panel.add(label, "cell 0 0 2 1");
 		
 		SpinnerNumberModel model1 = new SpinnerNumberModel(0, 0, 3, 1);  
 		spinner = new JSpinner(model1);
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
-		panel.add(spinner, "cell 1 0");
+		panel.add(spinner, "cell 2 0,growx");
 		
 		list = new JList<Mil1553Packet>();
 		list.setCellRenderer(new FaildItemsOfListRenderer());
@@ -149,7 +150,7 @@ public class MTTest {
 		btnStart = new JButton("Запуск монитора");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
 		btnStart.addActionListener(new ActionListenerController(btnStatus.mtStart));
-		panel.add(btnStart, "cell 0 1");
+		panel.add(btnStart, "cell 0 1 2 1,growx");
 		
 		btnStop = new JButton("Остановка монитора");
 		btnStop.setEnabled(false);
@@ -157,27 +158,30 @@ public class MTTest {
 		
 		
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
-		panel.add(btnStop, "cell 1 1");
+		panel.add(btnStop, "cell 2 1,growx");
 		
 		chooseDB = new JButton("Выбор БД");
-		panel.add(chooseDB, "cell 0 2");
+		panel.add(chooseDB, "cell 0 2 2 1,growx");
 		chooseDB.addActionListener(new ActionListenerController(btnStatus.changeDB));
 		
 		btnSql = new JButton("SQL запрос");
 		btnSql.setEnabled(false);
-		panel.add(btnSql, "cell 1 2");
+		panel.add(btnSql, "cell 2 2,growx");
 		
 		btnSql.addActionListener(new ActionListenerController(btnStatus.SqlQuery));
 		
 		statusDB = new JLabel("База не выбрана. При запуске будет создана новая БД");
-		panel.add(statusDB, "cell 0 3 2 1");
+		panel.add(statusDB, "cell 0 3 3 1");
+		
+		label_1 = new JLabel("Фильтр:");
+		panel.add(label_1, "cell 0 4,growx");
 		
 		textArea = new JTextArea();
-		panel.add(textArea, "cell 0 4 2 1,grow");
+		panel.add(textArea, "cell 1 4 2 1,grow");
 		
 		
 		JScrollPane scrollPane = new JScrollPane();
-		panel.add(scrollPane, "cell 0 5 2 3,grow");
+		panel.add(scrollPane, "cell 0 5 3 3,grow");
 		
 		list.setModel(model);
 		scrollPane.setViewportView(list);
