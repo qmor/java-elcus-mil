@@ -862,13 +862,10 @@ public class Elcus1553Device {
 							short[] buffer = pBuffer.getShortArray(0,64); 
 
 					
-							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,(short)sw,(short)statusword);
+							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
-							packet.status = EMilPacketStatus.eRECEIVED;
-							if ((((sw&0xffff)>>14)&1) == 1)
-							{
-								packet.status = EMilPacketStatus.eFAILED;
-							}
+						
+
 			
 							for (IMilMsgReceivedListener listener: msgReceivedListeners)
 							{
@@ -1015,7 +1012,7 @@ public class Elcus1553Device {
 	}
 	int mtgetsw()
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0));
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0);
 	}
 	int tmkconfig()
 	{

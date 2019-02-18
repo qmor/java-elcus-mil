@@ -15,7 +15,7 @@ public class Mil1553Packet {
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
-	public EMilErrorCode errorCode;
+	public EMilErrorCode errorCode  = EMilErrorCode.SX_NOERR;
 	public String decodeHTMLString;
 	public String shortDescr;
 	public Mil1553Packet() {}
@@ -24,6 +24,15 @@ public class Mil1553Packet {
 		date =  LocalDateTime.now();
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
+		
+		status = EMilPacketStatus.eRECEIVED;
+
+		if (!errorCode.equals(EMilErrorCode.SX_NOERR))
+		{
+			status = EMilPacketStatus.eFAILED;
+		}
+		
+		
 		format = calcFormat(commandWord);
 		switch (format) {
 		case CC_FMT_1:
@@ -103,6 +112,6 @@ public class Mil1553Packet {
 	
 	@Override
 	public String toString() {
-		return String.format("CW %04x AW %04x %s %s %s %s", commandWord, answerWord, format, bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr);
+		return String.format("CW %04x AW %04x %s %s %s %s [%s]", commandWord, answerWord, format, bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr,errorCode);
 	}
 }
