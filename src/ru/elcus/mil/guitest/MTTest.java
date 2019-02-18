@@ -1,6 +1,8 @@
 package ru.elcus.mil.guitest;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -12,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
 
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -28,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import net.miginfocom.swing.MigLayout;
+import ru.elcus.mil.EMilPacketStatus;
 import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
@@ -139,8 +143,8 @@ public class MTTest {
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(spinner, "cell 1 0");
 		
-		list= new JList<Mil1553Packet>();
-		
+		list = new JList<Mil1553Packet>();
+		list.setCellRenderer(new FaildItemsOfListRenderer());
 		
 		btnStart = new JButton("Запуск монитора");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -182,6 +186,22 @@ public class MTTest {
 		
 	}
 
+	
+	private class FaildItemsOfListRenderer extends DefaultListCellRenderer {
+	   @Override
+	   public Component getListCellRendererComponent(JList<?> list,
+	            Object value, int index, boolean isSelected, boolean cellHasFocus) {
+	         Component superRenderer = super.getListCellRendererComponent(list, value, index, isSelected,
+	               cellHasFocus);
+	         
+	         setBackground(null);
+	         setForeground(null);
+	         if (value != null && ((Mil1553Packet) value).status == EMilPacketStatus.eFAILED)
+	            setForeground(Color.RED);
+
+	         return superRenderer;
+	      }
+	}
 
 	class ActionListenerController extends MouseAdapter implements ActionListener
 	{
@@ -211,6 +231,7 @@ public class MTTest {
 							window.l_format.setText(String.valueOf(list.getSelectedValue().format));
 							window.l_status.setText(String.valueOf(list.getSelectedValue().status));
 							window.editorPane.setText(list.getSelectedValue().decodeHTMLString);
+							
 							
 							int numofrws = list.getSelectedValue().dataWords.length;
 							for(int i = 0; i < numofrws; i++)
@@ -245,12 +266,14 @@ public class MTTest {
 				} catch (Eclus1553Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
-				}  
-				
-				device.addMsgReceivedListener((msg)->{
-					model.insertElementAndAddToList(msg);
-				});
+				}
 			}
+			else
+				setDevicePause(false);
+			
+			device.addMsgReceivedListener((msg)->{
+				model.insertElementAndAddToList(msg);
+			});
 		}
 		
 		private void setDevicePause(boolean mode)
@@ -308,8 +331,6 @@ public class MTTest {
 						btnStop.setEnabled(true);
 						chooseDB.setEnabled(false);
 						
-						if(device != null)
-							setDevicePause(false);
 						
 						String filename = model.createNewDBConn();
 						if(filename != "")
@@ -317,9 +338,8 @@ public class MTTest {
 							currDBfile = new File(filename);
 							statusDB.setText("Создана БД: " + filename);
 						}
-							
-						mtStart();
 						
+						mtStart();
 						list.setModel(model);
 					}
 					
@@ -348,7 +368,7 @@ public class MTTest {
 				
 				case changeDB: {
 					String filename = changeDB();
-					if(filename != "")
+					if(filename != null)
 					{
 						btnSql.setEnabled(true);
 						statusDB.setText(filename + ".db (дата: " + (new Date(Long.valueOf(filename))) + ")");
