@@ -38,7 +38,9 @@ class TableModel extends DefaultTableModel
 	}
 	@Override
 	public int getRowCount() {
+		if (packet!=null)
 		return 32;
+		return 0;
 	}
 	@Override
 	public Object getValueAt(int row, int column) {
@@ -85,9 +87,9 @@ public class MTPacketGUI {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 405, 596);
+		frame.setBounds(100, 100, 466, 596);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frame.getContentPane().setLayout(new MigLayout("", "[127px][25px][250px]", "[15px][15px][15px][15px][15px][15px][262.00px][240px,grow]"));
+		frame.getContentPane().setLayout(new MigLayout("", "[127px][25px][250px,grow]", "[15px][15px][15px][15px][15px][15px][268.00px,grow][144.00px,grow]"));
 		
 		JLabel lblCommandword = new JLabel("CommandWord:");
 		frame.getContentPane().add(lblCommandword, "cell 0 0,alignx left,aligny center");

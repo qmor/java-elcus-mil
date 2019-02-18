@@ -128,7 +128,7 @@ public class MTTest {
 	private void initialize()
 	{
 		frame = new JFrame("MTTest");
-		frame.setBounds(100, 100, 450, 549);
+		frame.setBounds(100, 100, 694, 549);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
