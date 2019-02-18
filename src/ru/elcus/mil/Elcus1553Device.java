@@ -864,11 +864,12 @@ public class Elcus1553Device {
 					
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,(short)sw,(short)statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
+							packet.status = EMilPacketStatus.eRECEIVED;
 							if ((((sw&0xffff)>>14)&1) == 1)
 							{
 								packet.status = EMilPacketStatus.eFAILED;
 							}
-							packet.status = EMilPacketStatus.eRECEIVED;
+			
 							for (IMilMsgReceivedListener listener: msgReceivedListeners)
 							{
 								listener.msgReceived(packet);

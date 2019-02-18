@@ -2,14 +2,19 @@
   "decoders":
   [
   	{
-		"name":"гд1",
-		"class":"ru.vniiem.mildecoders.MBOKZ2V",
+		"name":"STR1",
+		"class":"ru.elcus.mildecoders.MBOKZ2V",
 		"rt":"9"
 	},
 	  	{
-		"name":"гд2",
-		"class":"ru.vniiem.mildecoders.MBOKZ2V",
+		"name":"STR2",
+		"class":"ru.elcus.mildecoders.MBOKZ2V",
 		"rt":"10"
+	},
+	  	{
+		"name":"BCK",
+		"class":"ru.elcus.mildecoders.MKABrkBck",
+		"rt":"0"
 	}
   ]
 }

@@ -2,10 +2,13 @@ package ru.elcus.mil;
 
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
-import java.util.Date;
+
+import java.time.LocalDateTime;
+
 
 public class Mil1553Packet {
-	public Date date;
+	public LocalDateTime date;
+	
 	public short commandWord;
 	public short answerWord;
 	public short[] dataWords = new short[32];
@@ -14,10 +17,11 @@ public class Mil1553Packet {
 	public EMilPacketStatus status;
 	public EMilErrorCode errorCode;
 	public String decodeHTMLString;
+	public String shortDescr;
 	public Mil1553Packet() {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{
-		date = new Date();
+		date =  LocalDateTime.now();
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
 		format = calcFormat(commandWord);
@@ -99,6 +103,6 @@ public class Mil1553Packet {
 	
 	@Override
 	public String toString() {
-		return String.format("CW %04x AW %04x %s %s %tT", commandWord, answerWord, format, bus, date);
+		return String.format("CW %04x AW %04x %s %s %s %s", commandWord, answerWord, format, bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr);
 	}
 }

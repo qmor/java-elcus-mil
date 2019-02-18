@@ -16,6 +16,7 @@ import javax.swing.DefaultListModel;
 
 import ru.elcus.mil.EMilPacketStatus;
 import ru.elcus.mil.Mil1553Packet;
+import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
 import ru.elcus.mildecoders.IMil1553Decoder;
@@ -121,7 +122,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             
 			pstmt.setString(1, String.format("%04x", packet.commandWord));
 			pstmt.setString(2, String.format("%04x",packet.answerWord));
-			pstmt.setLong(3, packet.date.getTime());;
+			pstmt.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
 			pstmt.setString(4, String.valueOf(packet.bus));
 			pstmt.setString(5, String.valueOf(packet.format));
 			pstmt.setString(6, String.valueOf(packet.status));
@@ -155,7 +156,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 			DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
         	
 			Mil1553Packet packet;
-			Date d;
+
 			
         	// loop through the result set
             while (rs.next()) {
@@ -163,8 +164,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             	packet.commandWord = (short) Integer.parseInt(rs.getString("CommandWord"), 16);
             	packet.answerWord = Short.parseShort(rs.getString("AnswerWord"), 16);
             	
-            	d = new Date(rs.getLong("Date"));
-            	packet.date = d;
+            	 
+            	packet.date = TimeManipulation.getDateTimeFromUnixUTC(rs.getDouble("Date"));
             	
             	packet.bus = EBus.valueOf(rs.getString("Bus"));
             	packet.format = EMilFormat.valueOf(rs.getString("Format"));

@@ -36,6 +36,7 @@ import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
+import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
 
@@ -224,10 +225,10 @@ public class MTTest {
 							
 							window.frame.setTitle("CW " + String.format("%04x", list.getSelectedValue().commandWord));
 							
-							window.l_AW.setText(String.format("%04x", list.getSelectedValue().answerWord));;
+							window.l_AW.setText(String.format("%04x", list.getSelectedValue().answerWord));
 							window.l_CW.setText(String.format("%04x ", list.getSelectedValue().commandWord));
 							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus));
-							window.l_date.setText(String.valueOf(list.getSelectedValue().date));
+							window.l_date.setText(TimeManipulation.ToLongTimeStringMillis(list.getSelectedValue().date));
 							window.l_format.setText(String.valueOf(list.getSelectedValue().format));
 							window.l_status.setText(String.valueOf(list.getSelectedValue().status));
 							window.editorPane.setText(list.getSelectedValue().decodeHTMLString);
