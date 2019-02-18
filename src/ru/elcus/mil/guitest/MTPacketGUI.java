@@ -1,15 +1,53 @@
 package ru.elcus.mil.guitest;
 
-import javax.swing.JFrame;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
-import javax.swing.JLabel;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.JTable;
-import javax.swing.JScrollPane;
 import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
+import net.miginfocom.swing.MigLayout;
+import ru.elcus.mil.Mil1553Packet;
+import ru.elcus.mil.TimeManipulation;
+
+class TableModel extends DefaultTableModel
+{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1210374564996406178L;
+	Mil1553Packet packet;
+	public TableModel(Mil1553Packet packet)
+	{
+		this.packet = packet;
+	}
+	@Override
+	public boolean isCellEditable(int row, int column) {
+	return false;
+	}
+	@Override
+	public int getColumnCount() {
+	return 2;
+	}
+	@Override
+	public String getColumnName(int column) {
+		if (column == 0)
+			return "#";
+		return "DataWord";
+	}
+	@Override
+	public int getRowCount() {
+		return 32;
+	}
+	@Override
+	public Object getValueAt(int row, int column) {
+		if (column == 0)
+			return row;
+		return  String.format("%04X", packet.dataWords[row]);
+	}
+	
+}
 public class MTPacketGUI {
 
 	JFrame frame;
@@ -21,13 +59,25 @@ public class MTPacketGUI {
 	JLabel l_bus;
 	DefaultTableModel model;
 	private JTable table;
+	TableModel tm;
 	JEditorPane editorPane;
 	
 	/**
 	 * Create the application.
 	 */
-	public MTPacketGUI() {
+	
+	public MTPacketGUI(Mil1553Packet packet) {
 		initialize();
+		frame.setTitle("CW " + String.format("%04x", packet.commandWord));
+		l_AW.setText(String.format("%04x", packet.answerWord));
+		l_CW.setText(String.format("%04x ", packet.commandWord));
+		l_bus.setText(String.valueOf(packet.bus));
+		l_date.setText(TimeManipulation.ToLongTimeStringMillis(packet.date));
+		l_format.setText(String.valueOf(packet.format));
+		l_status.setText(String.valueOf(packet.status));
+		editorPane.setText(packet.decodeHTMLString);
+		tm = new TableModel(packet);
+		table.setModel(tm);
 	}
 
 	/**
@@ -37,132 +87,53 @@ public class MTPacketGUI {
 		frame = new JFrame();
 		frame.setBounds(100, 100, 405, 596);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[]{160, 258, 0};
-		gridBagLayout.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 98, 225, 0};
-		gridBagLayout.columnWeights = new double[]{1.0, 1.0, Double.MIN_VALUE};
-		gridBagLayout.rowWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
-		frame.getContentPane().setLayout(gridBagLayout);
+		frame.getContentPane().setLayout(new MigLayout("", "[127px][25px][250px]", "[15px][15px][15px][15px][15px][15px][262.00px][240px,grow]"));
 		
 		JLabel lblCommandword = new JLabel("CommandWord:");
-		GridBagConstraints gbc_lblCommandword = new GridBagConstraints();
-		gbc_lblCommandword.anchor = GridBagConstraints.WEST;
-		gbc_lblCommandword.insets = new Insets(0, 15, 5, 5);
-		gbc_lblCommandword.gridx = 0;
-		gbc_lblCommandword.gridy = 0;
-		frame.getContentPane().add(lblCommandword, gbc_lblCommandword);
+		frame.getContentPane().add(lblCommandword, "cell 0 0,alignx left,aligny center");
 		
 		l_CW = new JLabel("Null");
-		GridBagConstraints gbc_lblNull = new GridBagConstraints();
-		gbc_lblNull.anchor = GridBagConstraints.WEST;
-		gbc_lblNull.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull.gridx = 1;
-		gbc_lblNull.gridy = 0;
-		frame.getContentPane().add(l_CW, gbc_lblNull);
+		frame.getContentPane().add(l_CW, "cell 2 0,alignx left,aligny center");
 		
 		JLabel lblNewLabel = new JLabel("AnswerWord:");
-		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
-		gbc_lblNewLabel.anchor = GridBagConstraints.ABOVE_BASELINE_LEADING;
-		gbc_lblNewLabel.insets = new Insets(0, 15, 5, 5);
-		gbc_lblNewLabel.gridx = 0;
-		gbc_lblNewLabel.gridy = 1;
-		frame.getContentPane().add(lblNewLabel, gbc_lblNewLabel);
+		frame.getContentPane().add(lblNewLabel, "cell 0 1,alignx left,aligny top");
 		
 		l_AW = new JLabel("Null");
-		GridBagConstraints gbc_lblNull_1 = new GridBagConstraints();
-		gbc_lblNull_1.anchor = GridBagConstraints.WEST;
-		gbc_lblNull_1.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull_1.gridx = 1;
-		gbc_lblNull_1.gridy = 1;
-		frame.getContentPane().add(l_AW, gbc_lblNull_1);
+		frame.getContentPane().add(l_AW, "cell 2 1,alignx left,aligny center");
 		
 		JLabel lblNewLabel_1 = new JLabel("Format:");
-		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
-		gbc_lblNewLabel_1.anchor = GridBagConstraints.WEST;
-		gbc_lblNewLabel_1.insets = new Insets(0, 15, 5, 5);
-		gbc_lblNewLabel_1.gridx = 0;
-		gbc_lblNewLabel_1.gridy = 2;
-		frame.getContentPane().add(lblNewLabel_1, gbc_lblNewLabel_1);
+		frame.getContentPane().add(lblNewLabel_1, "cell 0 2,alignx left,aligny center");
 		
 		l_format = new JLabel("Null");
-		GridBagConstraints gbc_lblNull_2 = new GridBagConstraints();
-		gbc_lblNull_2.anchor = GridBagConstraints.WEST;
-		gbc_lblNull_2.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull_2.gridx = 1;
-		gbc_lblNull_2.gridy = 2;
-		frame.getContentPane().add(l_format, gbc_lblNull_2);
+		frame.getContentPane().add(l_format, "cell 2 2,alignx left,aligny center");
 		
 		JLabel lblNewLabel_2 = new JLabel("Bus:");
-		GridBagConstraints gbc_lblNewLabel_2 = new GridBagConstraints();
-		gbc_lblNewLabel_2.anchor = GridBagConstraints.WEST;
-		gbc_lblNewLabel_2.insets = new Insets(0, 15, 5, 5);
-		gbc_lblNewLabel_2.gridx = 0;
-		gbc_lblNewLabel_2.gridy = 3;
-		frame.getContentPane().add(lblNewLabel_2, gbc_lblNewLabel_2);
+		frame.getContentPane().add(lblNewLabel_2, "cell 0 3,alignx left,aligny center");
 		
 		l_bus = new JLabel("Null");
-		GridBagConstraints gbc_lblNull_3 = new GridBagConstraints();
-		gbc_lblNull_3.anchor = GridBagConstraints.WEST;
-		gbc_lblNull_3.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull_3.gridx = 1;
-		gbc_lblNull_3.gridy = 3;
-		frame.getContentPane().add(l_bus, gbc_lblNull_3);
+		frame.getContentPane().add(l_bus, "cell 2 3,alignx left,aligny center");
 		
 		JLabel lblNewLabel_3 = new JLabel("Date:");
-		GridBagConstraints gbc_lblNewLabel_3 = new GridBagConstraints();
-		gbc_lblNewLabel_3.anchor = GridBagConstraints.WEST;
-		gbc_lblNewLabel_3.insets = new Insets(0, 15, 5, 5);
-		gbc_lblNewLabel_3.gridx = 0;
-		gbc_lblNewLabel_3.gridy = 4;
-		frame.getContentPane().add(lblNewLabel_3, gbc_lblNewLabel_3);
+		frame.getContentPane().add(lblNewLabel_3, "cell 0 4,alignx left,aligny center");
 		
 		l_date = new JLabel("Null");
-		GridBagConstraints gbc_lblNull_4 = new GridBagConstraints();
-		gbc_lblNull_4.anchor = GridBagConstraints.WEST;
-		gbc_lblNull_4.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull_4.gridx = 1;
-		gbc_lblNull_4.gridy = 4;
-		frame.getContentPane().add(l_date, gbc_lblNull_4);
+		frame.getContentPane().add(l_date, "cell 2 4,alignx left,aligny center");
 		
 		JLabel lblNewLabel_4 = new JLabel("Status: ");
-		GridBagConstraints gbc_lblNewLabel_4 = new GridBagConstraints();
-		gbc_lblNewLabel_4.anchor = GridBagConstraints.WEST;
-		gbc_lblNewLabel_4.insets = new Insets(0, 15, 5, 5);
-		gbc_lblNewLabel_4.gridx = 0;
-		gbc_lblNewLabel_4.gridy = 5;
-		frame.getContentPane().add(lblNewLabel_4, gbc_lblNewLabel_4);
+		frame.getContentPane().add(lblNewLabel_4, "cell 0 5,alignx left,aligny center");
 		
 		l_status = new JLabel("Null");
-		GridBagConstraints gbc_lblNull_5 = new GridBagConstraints();
-		gbc_lblNull_5.anchor = GridBagConstraints.WEST;
-		gbc_lblNull_5.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNull_5.gridx = 1;
-		gbc_lblNull_5.gridy = 5;
-		frame.getContentPane().add(l_status, gbc_lblNull_5);
+		frame.getContentPane().add(l_status, "cell 2 5,alignx left,aligny center");
 		
 		JScrollPane scrollPane = new JScrollPane();
-		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
-		gbc_scrollPane.gridwidth = 2;
-		gbc_scrollPane.fill = GridBagConstraints.BOTH;
-		gbc_scrollPane.gridx = 0;
-		gbc_scrollPane.gridy = 6;
-		frame.getContentPane().add(scrollPane, gbc_scrollPane);
+		frame.getContentPane().add(scrollPane, "cell 0 6 3 1,grow");
 		
-		model = new DefaultTableModel();
-		model.addColumn("DataWords");
 		
-		table = new JTable(model);
+		table = new JTable();
 		scrollPane.setViewportView(table);
 		
 		editorPane = new JEditorPane();
-		GridBagConstraints gbc_editorPane = new GridBagConstraints();
-		gbc_editorPane.gridwidth = 2;
-		gbc_editorPane.insets = new Insets(0, 0, 0, 5);
-		gbc_editorPane.fill = GridBagConstraints.BOTH;
-		gbc_editorPane.gridx = 0;
-		gbc_editorPane.gridy = 7;
-		frame.getContentPane().add(editorPane, gbc_editorPane);
+		frame.getContentPane().add(editorPane, "cell 0 7 3 1,grow");
 		
 	}
 

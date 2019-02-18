@@ -1,7 +1,5 @@
 package ru.elcus.mil;
 
-import ru.elcus.mil.structs.EMilFormat;
-
 public enum EMilErrorCode {
 	SX_NOERR,// 0
 	SX_MEO,// 1

@@ -2,9 +2,6 @@ package ru.elcus.mildecoders;
 
 import java.nio.ByteBuffer;
 
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-
 import ru.elcus.mil.Mil1553Packet;
 
 public class MBOKZ2V implements IMil1553Decoder {

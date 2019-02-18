@@ -36,7 +36,6 @@ import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
-import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
 
@@ -220,23 +219,10 @@ public class MTTest {
 				EventQueue.invokeLater(new Runnable() {
 					public void run() {
 						try {
-							MTPacketGUI window = new MTPacketGUI();
+							MTPacketGUI window = new MTPacketGUI(list.getSelectedValue());
 							window.frame.setVisible(true);
 							
-							window.frame.setTitle("CW " + String.format("%04x", list.getSelectedValue().commandWord));
 							
-							window.l_AW.setText(String.format("%04x", list.getSelectedValue().answerWord));
-							window.l_CW.setText(String.format("%04x ", list.getSelectedValue().commandWord));
-							window.l_bus.setText(String.valueOf(list.getSelectedValue().bus));
-							window.l_date.setText(TimeManipulation.ToLongTimeStringMillis(list.getSelectedValue().date));
-							window.l_format.setText(String.valueOf(list.getSelectedValue().format));
-							window.l_status.setText(String.valueOf(list.getSelectedValue().status));
-							window.editorPane.setText(list.getSelectedValue().decodeHTMLString);
-							
-							
-							int numofrws = list.getSelectedValue().dataWords.length;
-							for(int i = 0; i < numofrws; i++)
-								window.model.addRow(new Object[] {String.format("%04x", list.getSelectedValue().dataWords[i])});
 							
 						} catch (Exception e) {
 							e.printStackTrace();
