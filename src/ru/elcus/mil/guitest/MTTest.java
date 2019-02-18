@@ -126,7 +126,7 @@ public class MTTest {
 	
 	private void initialize()
 	{
-		frame = new JFrame();
+		frame = new JFrame("MTTest");
 		frame.setBounds(100, 100, 450, 549);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -267,13 +267,16 @@ public class MTTest {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+				
+				device.addMsgReceivedListener((msg)->{
+					model.insertElementAndAddToList(msg);
+				});
 			}
 			else
+			{
+				model.removeAllElements();
 				setDevicePause(false);
-			
-			device.addMsgReceivedListener((msg)->{
-				model.insertElementAndAddToList(msg);
-			});
+			}
 		}
 		
 		private void setDevicePause(boolean mode)
@@ -316,6 +319,7 @@ public class MTTest {
 		
 		@Override
 		public void actionPerformed(ActionEvent ev) {
+			
 			switch(st)
 			{
 				case mtStart: {
@@ -356,8 +360,6 @@ public class MTTest {
 					
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
 					
-					model.closeConn();
-					
 					break;
 				}
 					
@@ -367,6 +369,7 @@ public class MTTest {
 				}
 				
 				case changeDB: {
+					
 					String filename = changeDB();
 					if(filename != null)
 					{

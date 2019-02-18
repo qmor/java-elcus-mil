@@ -43,7 +43,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	public void setConnection(String dbname)
 	{
         try {
-            // db parameters
+        	
             String url = dbFolder + dbname;
             // create a connection to the database
             conn = DriverManager.getConnection(url);
@@ -60,9 +60,10 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		String name = String.valueOf(System.currentTimeMillis()) + ".db";
 		String url = dbFolder + name;
 		
-        try (Connection cn = DriverManager.getConnection(url);
-        		Statement stmt = cn.createStatement()) {
-        	conn = cn;
+        try {
+        	conn = DriverManager.getConnection(url);
+        	Statement stmt = conn.createStatement();
+        	
         	if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
@@ -91,9 +92,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	public void closeConn()
 	{
 		try {
-            if (conn != null) {
+            if (conn != null)
                 conn.close();
-            }
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
@@ -107,9 +107,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	void insertElementAndAddToList(Mil1553Packet packet)
 	{
 		if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
-		{
 			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
-		}
+		
 		addElement(packet);
 		
 		String metasql = "INSERT INTO metadata "
@@ -117,7 +116,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 				+ "VALUES "
 				+ "(?, ?, ?, ?, ?, ?, ?)";
 		
-		try (PreparedStatement pstmt = conn.prepareStatement(metasql, Statement.RETURN_GENERATED_KEYS)) {
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(metasql)) {
             
 			pstmt.setString(1, String.format("%04x", packet.commandWord));
 			pstmt.setString(2, String.format("%04x",packet.answerWord));
@@ -148,13 +148,12 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		String sql = "SELECT * FROM " + tablename;
 		if(!where.isEmpty())
 			sql += " WHERE " + where;
+		
 		try (Statement stmt  = conn.createStatement();
-            ResultSet rs    = stmt.executeQuery(sql)){
-            
+            ResultSet rs    = stmt.executeQuery(sql)) {
+			
 			DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
         	
-			
-			
 			Mil1553Packet packet;
 			Date d;
 			
