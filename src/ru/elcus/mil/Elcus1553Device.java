@@ -1,6 +1,7 @@
 package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -668,27 +669,27 @@ public class Elcus1553Device {
 						bcgetblk(1,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1+cmdcodeWordCount);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_2:
 						bcgetblk(2,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_4:
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_5:
 						Msg.answerWord = (short) bcgetw(1);
 						Msg.dataWords[0] = (short) bcgetw(2);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_6:
 						Msg.answerWord = (short) bcgetw(2);
 						Msg.dataWords[0] = (short) bcgetw(1);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						break;
 					default :
 						break;
@@ -817,7 +818,7 @@ public class Elcus1553Device {
 					{
 						Msg.commandWord = eventData.union.rt.wCmd; 
 						Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;	
 						
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
@@ -843,7 +844,7 @@ public class Elcus1553Device {
 						rtgetblk(0, pBuffer, len);
 						short[] buffer = pBuffer.getShortArray(0,32); 
 						System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
-						Msg.date = new Date();
+						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;						
 						
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)

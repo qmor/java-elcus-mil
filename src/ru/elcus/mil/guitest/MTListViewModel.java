@@ -76,7 +76,8 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
                         + "Bus,\n"
                         + "Format,\n"
                         + "Status,\n"
-                        + "DataWords\n"
+                        + "DataWords,\n"
+                        + "ShortDescr\n"
                         + ");";
                 
                 stmt.execute(sql);
@@ -112,9 +113,9 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		addElement(packet);
 		
 		String metasql = "INSERT INTO metadata "
-				+ "(`CommandWord`, `AnswerWord`, `Date`, `Bus`, `Format`, `Status`, `DataWords`) "
+				+ "(`CommandWord`, `AnswerWord`, `Date`, `Bus`, `Format`, `Status`, `DataWords`, `ShortDescr`) "
 				+ "VALUES "
-				+ "(?, ?, ?, ?, ?, ?, ?)";
+				+ "(?, ?, ?, ?, ?, ?, ?, ?)";
 		
 		
 		try (PreparedStatement pstmt = conn.prepareStatement(metasql)) {
@@ -125,6 +126,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 			pstmt.setString(4, String.valueOf(packet.bus));
 			pstmt.setString(5, String.valueOf(packet.format));
 			pstmt.setString(6, String.valueOf(packet.status));
+			pstmt.setString(8, packet.shortDescr);
 		
 			String DataWords = "";
 			int len = packet.dataWords.length;
@@ -169,6 +171,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             	packet.bus = EBus.valueOf(rs.getString("Bus"));
             	packet.format = EMilFormat.valueOf(rs.getString("Format"));
             	packet.status = EMilPacketStatus.valueOf(rs.getString("Status"));
+            	packet.shortDescr = rs.getString("ShortDescr");
             	
             	int i = 0;
             	for(String el : rs.getString("DataWords").split(","))
