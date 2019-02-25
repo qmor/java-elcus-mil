@@ -8,21 +8,31 @@ import java.time.LocalDateTime;
 
 
 public class Mil1553Packet {
+<<<<<<< HEAD
 	public LocalDateTime date;
 	
+=======
+	public Date date;
+>>>>>>> sergey
 	public short commandWord;
 	public short answerWord;
 	public short[] dataWords = new short[32];
 	public EBus bus;
 	public EMilFormat format;
 	public EMilPacketStatus status;
+<<<<<<< HEAD
 	public EMilErrorCode errorCode  = EMilErrorCode.SX_NOERR;
 	public String decodeHTMLString;
 	public String shortDescr;
+	public Mil1553Packet() {}
+	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
+	{
+		date =  LocalDateTime.now();
+=======
 	public Mil1553Packet () {}
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{		
-		date =  LocalDateTime.now();
+>>>>>>> sergey
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
 		
@@ -112,6 +122,10 @@ public class Mil1553Packet {
 	
 	@Override
 	public String toString() {
+<<<<<<< HEAD
 		return String.format("CW %04x AW %04x %s %s %s %s [%s]", commandWord, answerWord, format, bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr,errorCode);
+=======
+		return String.format("CW %04X AW %04X %s %s %tT", commandWord, answerWord, format, status, date);
+>>>>>>> sergey
 	}
 }

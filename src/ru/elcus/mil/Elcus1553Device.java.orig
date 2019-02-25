@@ -21,8 +21,16 @@ import ru.elcus.mil.structs.TTmkEventData;
  * @author qmor
  *
  */
+<<<<<<< HEAD
 
 
+/* Тестовое изменениие - работа с гит */
+
+
+=======
+ 
+ // New branch
+>>>>>>> sergey
 public class Elcus1553Device {
 
 
@@ -553,7 +561,8 @@ public class Elcus1553Device {
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
-					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
+<<<<<<< HEAD
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
 				
 				if(paused != pause)
 				{
@@ -576,6 +585,10 @@ public class Elcus1553Device {
 
 				result = (pause) ? mtstop() : mtstartx(mtLastBase, (CX_CONT | CX_NOINT | CX_NOSIG));
 
+=======
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
+				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+>>>>>>> sergey
 				if (result!=0)
 				{
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setPause() "+result); 
