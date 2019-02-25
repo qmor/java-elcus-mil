@@ -23,7 +23,6 @@ import ru.elcus.mil.structs.TTmkEventData;
  *
  */
 
-
 public class Elcus1553Device {
 
 
@@ -662,6 +661,7 @@ public class Elcus1553Device {
 					bcdefbase(0);
 					Msg.commandWord = (short) bcgetw(0);
 					Msg.format = Mil1553Packet.calcFormat(Msg.commandWord);
+					Msg.date = LocalDateTime.now();
 					Integer cmdcodeWordCount = Mil1553Packet.getWordsCount(Msg.commandWord);
 					switch(Msg.format)
 					{
@@ -669,27 +669,22 @@ public class Elcus1553Device {
 						bcgetblk(1,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1+cmdcodeWordCount);
-						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_2:
 						bcgetblk(2,pBuffer,cmdcodeWordCount);
 						Msg.dataWords = pBuffer.getShortArray(0, 32);
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_4:
 						Msg.answerWord = (short) bcgetw(1);
-						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_5:
 						Msg.answerWord = (short) bcgetw(1);
 						Msg.dataWords[0] = (short) bcgetw(2);
-						Msg.date = LocalDateTime.now();
 						break;
 					case CC_FMT_6:
 						Msg.answerWord = (short) bcgetw(2);
-						Msg.dataWords[0] = (short) bcgetw(1);
-						Msg.date = LocalDateTime.now();
+						Msg.dataWords[0] = (short) bcgetw(1);						
 						break;
 					default :
 						break;

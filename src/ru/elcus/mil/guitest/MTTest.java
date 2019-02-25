@@ -58,8 +58,7 @@ public class MTTest {
 	private File currDBfile;
 	private JLabel label_1;
 	
-	enum btnStatus
-	{
+	enum btnStatus{
 		mtStart,
 		mtStop,
 		SqlQuery,
@@ -87,8 +86,7 @@ public class MTTest {
 	}
 	
 	
-	private void loadJSON(String jsonFileName)
-	{
+	private void loadJSON(String jsonFileName){
 		File jsonFile = new File(jsonFileName);
 		if (!jsonFile.exists())
 			return;
@@ -125,8 +123,7 @@ public class MTTest {
 		}
 	}
 	
-	private void initialize()
-	{
+	private void initialize(){
 		frame = new JFrame("MTTest");
 		frame.setBounds(100, 100, 694, 549);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -192,7 +189,10 @@ public class MTTest {
 
 	
 	private class FaildItemsOfListRenderer extends DefaultListCellRenderer {
-	   @Override
+		
+	private static final long serialVersionUID = -8889521324387989571L;
+	
+	@Override
 	   public Component getListCellRendererComponent(JList<?> list,
 	            Object value, int index, boolean isSelected, boolean cellHasFocus) {
 	         Component superRenderer = super.getListCellRendererComponent(list, value, index, isSelected,
@@ -207,8 +207,7 @@ public class MTTest {
 	      }
 	}
 
-	class ActionListenerController extends MouseAdapter implements ActionListener
-	{
+	class ActionListenerController extends MouseAdapter implements ActionListener{
 		private btnStatus st;
 		
 		public ActionListenerController(btnStatus st)
@@ -216,8 +215,7 @@ public class MTTest {
 			this.st = st;
 		}
 		
-		private void getPacket()
-		{
+		private void getPacket(){
 			if(!list.isSelectionEmpty())
 			{
 				EventQueue.invokeLater(new Runnable() {
@@ -237,12 +235,13 @@ public class MTTest {
 		}
 		
 		@Override
-		public void mouseClicked(MouseEvent e)
-		{
+		public void mouseClicked(MouseEvent e){
 			switch(st)
 			{
 				case getPacket:
 					this.getPacket();
+					break;
+				default:
 					break;
 			}
 		}
@@ -270,8 +269,7 @@ public class MTTest {
 			}
 		}
 		
-		private void setDevicePause(boolean mode)
-		{
+		private void setDevicePause(boolean mode){
 			try {
 				device.setPause(mode);
 			} catch (Eclus1553Exception ex) {
@@ -279,8 +277,7 @@ public class MTTest {
 			}
 		}
 		
-		private String changeDB()
-		{ //testDBmonitor = 1550215139644.db
+		private String changeDB(){ 	
 			JFileChooser fch = new JFileChooser();
 			fch.setCurrentDirectory(new File(dbFolder));
 			fch.showOpenDialog(frame);
@@ -295,8 +292,7 @@ public class MTTest {
 			return filename;
 		}
 		
-		private void setListByQuery(String query)
-		{
+		private void setListByQuery(String query){
 			model.removeAllElements();
 			try
 			{
@@ -336,11 +332,9 @@ public class MTTest {
 						
 						mtStart();
 						list.setModel(model);
-					}
-					
+					}					
 					break;
-				}
-				
+				}				
 				case mtStop: {
 					btnStart.setEnabled(true);
 					btnStop.setEnabled(false);
@@ -352,15 +346,12 @@ public class MTTest {
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
 					
 					break;
-				}
-					
+				}					
 				case SqlQuery: {
 					setListByQuery(textArea.getText());
 					break;
-				}
-				
-				case changeDB: {
-					
+				}				
+				case changeDB: {					
 					String filename = changeDB();
 					if(filename != null)
 					{
@@ -376,14 +367,10 @@ public class MTTest {
 					}
 						
 					break;
-				}
-					
-			}
-			
-		}
-		
-		
-	}
-	
-	
+				}				
+				default:
+					break;					
+			}			
+		}				
+	}		
 }

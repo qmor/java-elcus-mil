@@ -2,7 +2,6 @@ package ru.elcus.mil;
 
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
-import java.util.Date;
 
 import java.time.LocalDateTime;
 
@@ -19,15 +18,18 @@ public class Mil1553Packet {
 	public EMilErrorCode errorCode  = EMilErrorCode.SX_NOERR;
 	public String decodeHTMLString;
 	public String shortDescr;
+	public int sw;
 	public Mil1553Packet () {}
+	
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{		
 		date =  LocalDateTime.now();
 		bus = ((rawPacket.sw&0xffff)>>15)==1?EBus.eBusB:EBus.eBusA;
 		commandWord = rawPacket.basedata[0];
-		
+		this.sw = rawPacket.sw;
+		errorCode = EMilErrorCode.fromInteger(rawPacket.sw&7);
 		status = EMilPacketStatus.eRECEIVED;
-
+		
 		if (!errorCode.equals(EMilErrorCode.SX_NOERR))
 		{
 			status = EMilPacketStatus.eFAILED;
@@ -112,6 +114,6 @@ public class Mil1553Packet {
 	
 	@Override
 	public String toString() {
-		return String.format("CW %04x AW %04x %s %s %s %s [%s]", commandWord, answerWord, format, bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr,errorCode);
+		return String.format("CW %04x AW %04x %s %s %s %s %s [%s]", commandWord, answerWord, format, status , bus, TimeManipulation.ToLongTimeStringMillis(date),shortDescr,errorCode);
 	}
 }
