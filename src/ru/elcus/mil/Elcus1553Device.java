@@ -745,7 +745,7 @@ public class Elcus1553Device {
 					{
 						pBuffer.setShort(0, msg.commandWord);
 						for (int i=0;i<32;i++)
-							pBuffer.setShort(i+1, msg.dataWords[i]);
+							pBuffer.setShort(i*2+2, msg.dataWords[i]);
 
 						bcdefbase(0);
 						bcputblk(0, pBuffer, (short)64);
@@ -758,7 +758,7 @@ public class Elcus1553Device {
 						bcdefbase(0);
 						bcputw(0,msg.commandWord);
 						bcdefbus(msg.bus.toInt());
-						bcstart(0,DATA_RT_BC);
+						bcstart(0,DATA_RT_BC);	
 						msg.status = EMilPacketStatus.eSENT;
 					}
 					else if (msg.format.equals(EMilFormat.CC_FMT_4) || msg.format.equals(EMilFormat.CC_FMT_5))
