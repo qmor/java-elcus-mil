@@ -884,7 +884,7 @@ public class Elcus1553Device {
 							int statusword = eventData.union.mt.wResultX;
 
 							mtgetblk(0, pBuffer, 64);
-							short[] buffer = pBuffer.getShortArray(0,64); 
+							short[] buffer = pBuffer.getShortArray(0,64); //TODO: где то тут есть ошибка
 
 					
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);

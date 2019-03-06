@@ -1,5 +1,6 @@
 package ru.elcus.mil.guitest;
 
+import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -7,9 +8,17 @@ import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -22,6 +31,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
@@ -36,6 +46,7 @@ import ru.elcus.mil.Eclus1553Exception;
 import ru.elcus.mil.Elcus1553Device;
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.MilWorkMode;
+import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
 
@@ -47,6 +58,8 @@ public class MTTest {
 	private JSpinner spinner;
 	private JList<Mil1553Packet> list;
 	private JTextArea textArea;
+	private JScrollBar verticalBar;
+	private AdjustmentListener adjlistener;
 	
 	private static final String dbFolder = "databases/";
 	
@@ -57,13 +70,15 @@ public class MTTest {
 	private JLabel statusDB;
 	private File currDBfile;
 	private JLabel label_1;
+	private JButton htmlbtn;
 	
 	enum btnStatus{
 		mtStart,
 		mtStop,
 		SqlQuery,
 		getPacket,
-		changeDB
+		changeDB,
+		gethtmlfile
 	}
 	
 	public static void main(String[] args) {
@@ -125,12 +140,12 @@ public class MTTest {
 	
 	private void initialize(){
 		frame = new JFrame("MTTest");
-		frame.setBounds(100, 100, 694, 549);
+		frame.setBounds(100, 100, 694, 637);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
-		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][grow]"));
+		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][415.00,grow][50.00]"));
 		
 		JLabel label = new JLabel("Выбор платы");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -183,10 +198,33 @@ public class MTTest {
 		list.setModel(model);
 		scrollPane.setViewportView(list);
 		
+		htmlbtn = new JButton("Выгрузить в html");
+		htmlbtn.addActionListener(new ActionListenerController(btnStatus.gethtmlfile));
+		htmlbtn.setEnabled(false);
+		
+		verticalBar = scrollPane.getVerticalScrollBar();
+		
+		verticalBar.addMouseListener(new MouseAdapter(){
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				verticalBar.setValue(verticalBar.getValue());
+				verticalBar.removeAdjustmentListener(adjlistener);
+			}
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if(btnStop.isEnabled())
+					verticalBar.addAdjustmentListener(adjlistener);
+			}
+			
+		});
+		
+		panel.add(htmlbtn, "cell 0 8 3 1,growx");
+		
 		list.addMouseListener(new ActionListenerController(btnStatus.getPacket));
 		
 	}
-
 	
 	private class FaildItemsOfListRenderer extends DefaultListCellRenderer {
 		
@@ -207,7 +245,7 @@ public class MTTest {
 	      }
 	}
 
-	class ActionListenerController extends MouseAdapter implements ActionListener{
+class ActionListenerController extends MouseAdapter implements ActionListener {
 		private btnStatus st;
 		
 		public ActionListenerController(btnStatus st)
@@ -223,9 +261,6 @@ public class MTTest {
 						try {
 							MTPacketGUI window = new MTPacketGUI(list.getSelectedValue());
 							window.frame.setVisible(true);
-							
-							
-							
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -304,6 +339,61 @@ public class MTTest {
 			}
 		}
 		
+		private String getHTMLpacket(Mil1553Packet packet, int num) {
+			StringBuilder sb = new StringBuilder();
+			
+			sb.append("<div class='wrap'><h3>Пакет #" + num + "</h3>");
+			sb.append("<div class='metainfo'><ul>");
+			sb.append(String.format("<li><b>Командное слово:</b> %04Xh</li>", packet.commandWord));
+			sb.append(String.format("<li><b>Ответное слово:</b> %04Xh</li>", packet.answerWord));
+			sb.append("<li><b>Формат:</b> " + packet.format + "</li>");
+			sb.append("<li><b>Шина:</b> " + packet.bus + "</li>");
+			sb.append("<li><b>Дата:</b> " + TimeManipulation.ToLongTimeStringMillis(packet.date) + "</li>");
+			sb.append("<li><b>Статус:</b> " + packet.status + "</li></ul></div>");
+			
+			sb.append("<div class='datawords'><ul><li><b><i>Массив слов данных</i></b></li>");
+			for(int i = 0; i < packet.dataWords.length; i++)
+				sb.append(String.format("<li><b>#%d:</b> %04Xh</li>", i, packet.dataWords[i]));
+			
+			sb.append("</ul></div></div>");
+			
+			return sb.toString();
+		}
+		
+		private void getHTMLfile()
+		{
+			int listSize = list.getModel().getSize();
+			
+			if(listSize > 0)
+			{
+				
+				String FILENAME = "./htmldump/" + String.valueOf(System.currentTimeMillis()) + ".html";
+				File fl = new File(FILENAME);
+				
+				try {
+					fl.createNewFile();
+					
+					try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(FILENAME), "UTF8"))) 
+					{
+						bw.write("<!DOCTYPE html><head><meta charset='UTF-8' /><title>" + statusDB.getText() + "</title><style>ul{list-style:none;} .wrap{ max-width:300px;margin:0 auto;border:1px solid black;} .wrap h3{text-align:center;border-bottom:1px solid black;padding-bottom:15px;}</style></head><body><h1 align='center'>" + statusDB.getText() + "</h1>");
+						
+							for(int i = 0; i < listSize; i++)
+								bw.write(getHTMLpacket(list.getModel().getElementAt(i), i));
+							
+						bw.write("</body></html>");
+							
+						bw.flush();
+						bw.close();
+					}
+					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+			}
+		}
+		
 		@Override
 		public void actionPerformed(ActionEvent ev) {
 			
@@ -321,7 +411,7 @@ public class MTTest {
 						btnSql.setEnabled(false);
 						btnStop.setEnabled(true);
 						chooseDB.setEnabled(false);
-						
+						htmlbtn.setEnabled(false);
 						
 						String filename = model.createNewDBConn();
 						if(filename != "")
@@ -332,7 +422,17 @@ public class MTTest {
 						
 						mtStart();
 						list.setModel(model);
-					}					
+					}
+					
+					adjlistener = new AdjustmentListener() {
+						@Override
+			            public void adjustmentValueChanged(AdjustmentEvent e) {
+			                verticalBar.setValue(verticalBar.getMaximum());
+			            }
+					};
+					
+					verticalBar.addAdjustmentListener(adjlistener);
+					
 					break;
 				}				
 				case mtStop: {
@@ -340,17 +440,24 @@ public class MTTest {
 					btnStop.setEnabled(false);
 					btnSql.setEnabled(true);
 					chooseDB.setEnabled(true);
+					htmlbtn.setEnabled(true);
 					
 					setDevicePause(true);
 					
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
+					
+					verticalBar.removeAdjustmentListener(adjlistener);
 					
 					break;
 				}					
 				case SqlQuery: {
 					setListByQuery(textArea.getText());
 					break;
-				}				
+				}
+				case gethtmlfile: {
+					getHTMLfile();
+					break;
+				}
 				case changeDB: {					
 					String filename = changeDB();
 					if(filename != null)
@@ -365,7 +472,12 @@ public class MTTest {
 						
 						setListByQuery("");
 					}
-						
+					
+					if(list.getModel().getSize() == 0)
+						htmlbtn.setEnabled(false);
+					else
+						htmlbtn.setEnabled(true);
+					
 					break;
 				}				
 				default:
