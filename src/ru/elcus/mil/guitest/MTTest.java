@@ -349,6 +349,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			sb.append("<li><b>Формат:</b> " + packet.format + "</li>");
 			sb.append("<li><b>Шина:</b> " + packet.bus + "</li>");
 			sb.append("<li><b>Дата:</b> " + TimeManipulation.ToLongTimeStringMillis(packet.date) + "</li>");
+			sb.append("<li><b>Описание:</b> " + packet.shortDescr + "</li>");
 			sb.append("<li><b>Статус:</b> " + packet.status + "</li></ul></div>");
 			
 			sb.append("<div class='datawords'><ul><li><b><i>Массив слов данных</i></b></li>");
