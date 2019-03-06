@@ -86,6 +86,7 @@ public class Mil1553Packet {
 	{
 		Integer rtrbit = getRTRBit(cmdWord);
 		Integer subaddress = getSubAddress(cmdWord);
+		Integer wordscount = getWordsCount(cmdWord);
 		boolean isItMode = (subaddress==0||subaddress==0x1f)?true:false;		
 		if (rtrbit==0 && !isItMode)
 		{
@@ -95,15 +96,15 @@ public class Mil1553Packet {
 		{
 			return EMilFormat.CC_FMT_2;
 		}
-		else if (rtrbit==1 && isItMode && (subaddress>=0 && subaddress<=15))
+		else if (rtrbit==1 && isItMode && (wordscount>=0 && wordscount<=15))
 		{
 			return EMilFormat.CC_FMT_4;
 		}
-		else if (rtrbit==1 && isItMode && (subaddress==16 || subaddress==18 || subaddress==19))
+		else if (rtrbit==1 && isItMode && (wordscount==16 || wordscount==18 || wordscount==19))
 		{
 			return EMilFormat.CC_FMT_5;
 		}
-		else if (rtrbit==0 && isItMode && (subaddress==17 || subaddress==20 || subaddress==21))
+		else if (rtrbit==0 && isItMode && (wordscount==17 || wordscount==20 || wordscount==21))
 		{
 			return EMilFormat.CC_FMT_6;
 		}
