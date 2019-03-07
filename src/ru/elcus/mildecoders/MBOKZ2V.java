@@ -2,6 +2,8 @@ package ru.elcus.mildecoders;
 
 import java.nio.ByteBuffer;
 
+import javax.swing.JComponent;
+
 import ru.elcus.mil.Mil1553Packet;
 
 public class MBOKZ2V implements IMil1553Decoder {
@@ -71,6 +73,12 @@ String name;
 
 		}
 		packet.decodeHTMLString = sb.toString();
+	}
+
+	@Override
+	public JComponent getGui() {
+
+		return null;
 	}
 
 }
