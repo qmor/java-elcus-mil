@@ -71,6 +71,7 @@ public class MTTest {
 	private File currDBfile;
 	private JLabel label_1;
 	private JButton htmlbtn;
+	private JButton binbutton;
 	
 	enum btnStatus{
 		mtStart,
@@ -78,7 +79,8 @@ public class MTTest {
 		SqlQuery,
 		getPacket,
 		changeDB,
-		gethtmlfile
+		gethtmlfile,
+		getbinfile
 	}
 	
 	public static void main(String[] args) {
@@ -140,12 +142,12 @@ public class MTTest {
 	
 	private void initialize(){
 		frame = new JFrame("MTTest");
-		frame.setBounds(100, 100, 694, 637);
+		frame.setBounds(100, 100, 694, 695);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.CENTER);
-		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][415.00,grow][50.00]"));
+		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][415.00,grow][36.00][35.00]"));
 		
 		JLabel label = new JLabel("Выбор платы");
 		label.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -220,7 +222,12 @@ public class MTTest {
 			
 		});
 		
-		panel.add(htmlbtn, "cell 0 8 3 1,growx");
+		panel.add(htmlbtn, "cell 0 8 3 1,grow");
+		
+		binbutton = new JButton("Создать bin файл");
+		panel.add(binbutton, "cell 0 9 3 1,grow");
+		binbutton.setEnabled(false);
+		binbutton.addActionListener(new ActionListenerController(btnStatus.getbinfile));
 		
 		list.addMouseListener(new ActionListenerController(btnStatus.getPacket));
 		
@@ -395,6 +402,50 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			}
 		}
 		
+		
+		
+		private void getBinFile()
+		{
+			int listSize = list.getModel().getSize();
+			
+			if(listSize > 0)
+			{
+				
+				String FILENAME = "./bindumps/" + String.valueOf(System.currentTimeMillis()) + ".bin";
+				File fl = new File(FILENAME);
+				
+				try {
+					fl.createNewFile();
+					
+					// String text = "Hello world!";
+			        try(FileOutputStream fos=new FileOutputStream(fl))
+			        {
+			            // byte[] buffer = text.getBytes();
+			            
+			        	// list.getModel().getElementAt(i);
+			        	
+			        	for(int i = 0; i < listSize; i++)
+			        	{
+			        		Mil1553Packet packet = list.getModel().getElementAt(i);
+			        		int dwsize = Mil1553Packet.getWordsCount(packet.commandWord);
+			        		
+			        		for(int j = 0; j < dwsize; j++)
+			        		{
+			        			fos.write((byte) ((packet.dataWords[j] >> 8) & 0xff));
+			        			fos.write((byte) (packet.dataWords[j] & 0xff));
+			        		}
+			        	}
+			        
+			        }
+			        
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+			}
+		}
+		
 		@Override
 		public void actionPerformed(ActionEvent ev) {
 			
@@ -413,6 +464,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						btnStop.setEnabled(true);
 						chooseDB.setEnabled(false);
 						htmlbtn.setEnabled(false);
+						binbutton.setEnabled(false);
 						
 						String filename = model.createNewDBConn();
 						if(filename != "")
@@ -442,6 +494,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					btnSql.setEnabled(true);
 					chooseDB.setEnabled(true);
 					htmlbtn.setEnabled(true);
+					binbutton.setEnabled(true);
 					
 					setDevicePause(true);
 					
@@ -457,6 +510,10 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 				}
 				case gethtmlfile: {
 					getHTMLfile();
+					break;
+				}
+				case getbinfile: {
+					getBinFile();
 					break;
 				}
 				case changeDB: {					
@@ -475,10 +532,16 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					}
 					
 					if(list.getModel().getSize() == 0)
+					{
 						htmlbtn.setEnabled(false);
+						binbutton.setEnabled(false);
+					}
 					else
+					{
 						htmlbtn.setEnabled(true);
-					
+						binbutton.setEnabled(true);
+					}
+						
 					break;
 				}				
 				default:
