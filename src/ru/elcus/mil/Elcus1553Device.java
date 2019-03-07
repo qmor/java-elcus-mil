@@ -963,7 +963,7 @@ public class Elcus1553Device {
 				}
 
 				result = rtdefmode(0);
-				result|= rtdefirqmode(0);
+				result|= rtdefirqmode(0);				
 				rtenable(RT_DISABLE);
 				runnerThread = new Thread(this::listenLoopRT);
 			}

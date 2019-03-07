@@ -1,5 +1,8 @@
 package ru.elcus.mildecoders;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import ru.elcus.mil.Mil1553Packet;
 
 public class MKABrkBck implements IMil1553Decoder {
@@ -42,11 +45,28 @@ public class MKABrkBck implements IMil1553Decoder {
 			packet.decodeHTMLString = String.format("ТМИ КИС %d",sa-28 );
 			packet.shortDescr =  String.format("ТМИ КИС %d",sa-28 );
 		}
-		else if (rtr==1 && sa>=12&& sa<=28)
+		else if (rtr==1 && sa>12&& sa<=28)
 		{
 			packet.decodeHTMLString = String.format("ТМИ БЦК %d",sa-11 );
 			packet.shortDescr =  String.format("ТМИ БЦК %d",sa-11 );
 		}
+		else if (rtr==1 && sa==12)
+		{
+			
+			ByteBuffer bb = ByteBuffer.wrap(packet.dataWordsAsByteArray());
+			bb.order(ByteOrder.LITTLE_ENDIAN);
+			
+			StringBuilder sb = new StringBuilder();
+			sb.append(String.format("time %f <br>", bb.getDouble()));
+			sb.append(String.format("frametype %d <br>", bb.getShort()));
+			sb.append(String.format("replaytype %d <br>", bb.getShort()));
+			sb.append(String.format("wpointer %d <br>", bb.getInt()));
+			sb.append(String.format("rpointer %d <br>", bb.getInt()));
+			packet.decodeHTMLString = sb.toString();
+			packet.shortDescr =  String.format("ТМИ БЦК осн");
+		}
+		
+		
 	}
 
 }

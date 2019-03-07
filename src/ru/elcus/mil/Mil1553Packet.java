@@ -3,6 +3,7 @@ package ru.elcus.mil;
 import ru.elcus.mil.structs.EBus;
 import ru.elcus.mil.structs.EMilFormat;
 
+import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 
 
@@ -20,6 +21,18 @@ public class Mil1553Packet {
 	public String shortDescr;
 	public int sw;
 	public Mil1553Packet () {}
+	
+	
+	public byte[] dataWordsAsByteArray()
+	{
+		int i = 0;
+		ByteBuffer byteBuf = ByteBuffer.allocate(64);
+		while (32 > i) {
+		    byteBuf.putShort(dataWords[i]);
+		    i++;
+		}
+		return byteBuf.array();
+	}
 	
 	public Mil1553Packet(Mil1553RawPacketMT rawPacket)
 	{		
