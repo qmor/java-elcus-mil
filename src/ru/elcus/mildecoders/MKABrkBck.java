@@ -1,5 +1,6 @@
 package ru.elcus.mildecoders;
 
+import java.awt.Dimension;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -149,8 +150,9 @@ public class MKABrkBck implements IMil1553Decoder {
 
 	@Override
 	public JComponent getGui() {
-
-		return null;
+		JPanel panel = new JPanel();
+		panel.setSize(694, 400);
+		return panel;
 	}
 
 }

@@ -36,6 +36,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,6 +51,7 @@ import ru.elcus.mil.MilWorkMode;
 import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
+import javax.swing.JTabbedPane;
 
 
 public class MTTest {
@@ -72,6 +75,7 @@ public class MTTest {
 	private JLabel label_1;
 	private JButton htmlbtn;
 	private JButton binbutton;
+	private JTabbedPane tabbedPane;
 	
 	enum btnStatus{
 		mtStart,
@@ -88,7 +92,6 @@ public class MTTest {
 			public void run() {
 				try {
 					MTTest window = new MTTest(args);
-					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -98,8 +101,13 @@ public class MTTest {
 	
 	public MTTest(String[] args) {
 		initialize();
+		
 		if (args.length>0)
 			loadJSON(args[0]);
+	
+		frame.setVisible(true);
+		frame.setLocation(100, 100);
+		frame.setSize(694, frame.getPreferredSize().height);
 	}
 	
 	
@@ -120,6 +128,8 @@ public class MTTest {
 		
 		JSONArray array= json.getJSONArray("decoders");
 		ClassByNameHelper cbn = new ClassByNameHelper();
+		
+		String rtname;
 		for (Object o : array)
 		{
 			if (o instanceof JSONObject)
@@ -132,7 +142,11 @@ public class MTTest {
 					if (inst instanceof IMil1553Decoder)
 					{
 						IMil1553Decoder rt = (IMil1553Decoder)inst;
-						rt.initDecoder(jso.getString("name"), jso.getInt("rt"));
+						rtname = jso.getString("name");
+						
+						tabbedPane.add(rtname, rt.getGui());
+						
+						rt.initDecoder(rtname, jso.getInt("rt"));
 						model.addDecoder(rt);
 					}
 				}
@@ -142,11 +156,10 @@ public class MTTest {
 	
 	private void initialize(){
 		frame = new JFrame("MTTest");
-		frame.setBounds(100, 100, 694, 695);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
-		frame.getContentPane().add(panel, BorderLayout.CENTER);
+		// frame.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][415.00,grow][36.00][35.00]"));
 		
 		JLabel label = new JLabel("Выбор платы");
@@ -210,14 +223,13 @@ public class MTTest {
 			
 			@Override
 			public void mousePressed(MouseEvent e) {
-				verticalBar.setValue(verticalBar.getValue());
 				verticalBar.removeAdjustmentListener(adjlistener);
 			}
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				if(btnStop.isEnabled())
-					verticalBar.addAdjustmentListener(adjlistener);
+				if(verticalBar.getValue() + verticalBar.getModel().getExtent() + 100  >= verticalBar.getMaximum())
+					 verticalBar.addAdjustmentListener(adjlistener);
 			}
 			
 		});
@@ -227,6 +239,13 @@ public class MTTest {
 		binbutton = new JButton("Создать bin файл");
 		panel.add(binbutton, "cell 0 9 3 1,grow");
 		binbutton.setEnabled(false);
+		
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		frame.getContentPane().add(tabbedPane, BorderLayout.NORTH);
+		tabbedPane.setBorder(null);
+		
+		tabbedPane.addTab("MTTest", panel);
+
 		binbutton.addActionListener(new ActionListenerController(btnStatus.getbinfile));
 		
 		list.addMouseListener(new ActionListenerController(btnStatus.getPacket));

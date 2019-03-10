@@ -3,6 +3,7 @@ package ru.elcus.mildecoders;
 import java.nio.ByteBuffer;
 
 import javax.swing.JComponent;
+import javax.swing.JPanel;
 
 import ru.elcus.mil.Mil1553Packet;
 
@@ -77,8 +78,7 @@ String name;
 
 	@Override
 	public JComponent getGui() {
-
-		return null;
+		return new JPanel();
 	}
 
 }
