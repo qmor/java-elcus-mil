@@ -1,6 +1,5 @@
 package ru.elcus.mil.guitest;
 
-import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -15,10 +14,8 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -36,8 +33,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -92,6 +87,7 @@ public class MTTest {
 			public void run() {
 				try {
 					MTTest window = new MTTest(args);
+					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -142,12 +138,10 @@ public class MTTest {
 					if (inst instanceof IMil1553Decoder)
 					{
 						IMil1553Decoder rt = (IMil1553Decoder)inst;
-						rtname = jso.getString("name");
-						
-						tabbedPane.add(rtname, rt.getGui());
-						
+						rtname = jso.getString("name");											
 						rt.initDecoder(rtname, jso.getInt("rt"));
 						model.addDecoder(rt);
+						tabbedPane.add(rtname, rt.getGui());
 					}
 				}
 			}
@@ -159,7 +153,7 @@ public class MTTest {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel panel = new JPanel();
-		// frame.getContentPane().add(panel, BorderLayout.CENTER);
+		//frame.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new MigLayout("", "[][grow][grow]", "[][][][][22.00][][grow][415.00,grow][36.00][35.00]"));
 		
 		JLabel label = new JLabel("Выбор платы");
@@ -436,13 +430,8 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 				try {
 					fl.createNewFile();
 					
-					// String text = "Hello world!";
 			        try(FileOutputStream fos=new FileOutputStream(fl))
-			        {
-			            // byte[] buffer = text.getBytes();
-			            
-			        	// list.getModel().getElementAt(i);
-			        	
+			        {			        	
 			        	for(int i = 0; i < listSize; i++)
 			        	{
 			        		Mil1553Packet packet = list.getModel().getElementAt(i);

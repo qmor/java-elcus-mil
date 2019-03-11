@@ -94,39 +94,39 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	}
 	
 	void insertElementAndAddToList(Mil1553Packet packet){
-		if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
-			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
-		
-		addElement(packet);
-		
-		String metasql = "INSERT INTO metadata "
-				+ "(`CommandWord`, `AnswerWord`, `Date`, `DataWords`, `SW`) "
-				+ "VALUES "
-				+ "(?, ?, ?, ?, ?)";
-		
-		
-		try (PreparedStatement pstmt = conn.prepareStatement(metasql)) {
-            
-			pstmt.setString(1, String.format("%04x", packet.commandWord));
-			pstmt.setString(2, String.format("%04x",packet.answerWord));
-			pstmt.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
-			pstmt.setString(5, String.valueOf(packet.sw));
-		
-			String DataWords = "";
-			int len = packet.dataWords.length;
-			for(int i = 0; i < len; i++)
-			{
-				DataWords += String.valueOf(packet.dataWords[i]);
-				if(i < len - 1)
-					DataWords += ",";
-			}
-			pstmt.setString(4, DataWords);
-				
-            pstmt.executeUpdate();
-            
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
+			if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
+				decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
+			
+			addElement(packet);
+			
+			String metasql = "INSERT INTO metadata "
+					+ "(`CommandWord`, `AnswerWord`, `Date`, `DataWords`, `SW`) "
+					+ "VALUES "
+					+ "(?, ?, ?, ?, ?)";
+			
+			
+			try (PreparedStatement pstmt = conn.prepareStatement(metasql)) {
+	            
+				pstmt.setString(1, String.format("%04x", packet.commandWord));
+				pstmt.setString(2, String.format("%04x",packet.answerWord));
+				pstmt.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
+				pstmt.setString(5, String.valueOf(packet.sw));
+			
+				String DataWords = "";
+				int len = packet.dataWords.length;
+				for(int i = 0; i < len; i++)
+				{
+					DataWords += String.valueOf(packet.dataWords[i]);
+					if(i < len - 1)
+						DataWords += ",";
+				}
+				pstmt.setString(4, DataWords);
+					
+	            pstmt.executeUpdate();
+	            
+	        } catch (SQLException e) {
+	            System.out.println(e.getMessage());
+	        }		
 	}
 	
 	DefaultListModel<Mil1553Packet> getListByQuery(String where){
@@ -200,6 +200,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             System.out.println(e.getMessage());
         }
 		
+	
 		return null;
 	}
 	
