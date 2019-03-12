@@ -20,15 +20,15 @@ public class Mil1553Packet {
 	public String decodeHTMLString;
 	public String shortDescr;
 	public int sw;
-	public Mil1553Packet () {}
-	
+	public Mil1553Packet () {}	
 	
 	public byte[] dataWordsAsByteArray()
 	{
 		int i = 0;
 		ByteBuffer byteBuf = ByteBuffer.allocate(64);
-		while (32 > i) {
-		    byteBuf.putShort(dataWords[i]);
+		while (i< 32) {
+			byteBuf.put((byte)(dataWords[i]&0xff));
+			byteBuf.put((byte)((dataWords[i]>>8)&0xff));
 		    i++;
 		}
 		return byteBuf.array();
@@ -50,18 +50,17 @@ public class Mil1553Packet {
 		
 		
 		format = calcFormat(commandWord);
+		int i = getWordsCount(commandWord);
+		if (i==0) 
+			i = 32;
 		switch (format) {
 		case CC_FMT_1:
-			System.arraycopy(rawPacket.basedata,1,dataWords,0,getWordsCount(commandWord));
-			int i = getWordsCount(commandWord);
-			if (i==0) 
-				i = 32;
+			System.arraycopy(rawPacket.basedata,1,dataWords,0,i);
 			answerWord = rawPacket.basedata[i+1];
 			break;
 		case CC_FMT_2:
-			answerWord = rawPacket
-			.basedata[1];
-			System.arraycopy(rawPacket.basedata,2,dataWords,0,getWordsCount(commandWord));
+			answerWord = rawPacket.basedata[1];
+			System.arraycopy(rawPacket.basedata,2,dataWords,0,i);
 			break;
 		case CC_FMT_4:
 			answerWord = rawPacket.basedata[1];

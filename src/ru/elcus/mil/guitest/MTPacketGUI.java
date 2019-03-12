@@ -135,6 +135,7 @@ public class MTPacketGUI {
 		scrollPane.setViewportView(table);
 		
 		editorPane = new JEditorPane();
+		editorPane.setContentType("text/html");
 		frame.getContentPane().add(editorPane, "cell 0 7 3 1,grow");
 		
 	}

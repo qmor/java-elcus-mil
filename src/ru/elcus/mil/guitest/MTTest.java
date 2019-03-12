@@ -248,21 +248,18 @@ public class MTTest {
 	
 	private class FaildItemsOfListRenderer extends DefaultListCellRenderer {
 		
-	private static final long serialVersionUID = -8889521324387989571L;
-	
-	@Override
-	   public Component getListCellRendererComponent(JList<?> list,
-	            Object value, int index, boolean isSelected, boolean cellHasFocus) {
-	         Component superRenderer = super.getListCellRendererComponent(list, value, index, isSelected,
-	               cellHasFocus);
-	         
-	         setBackground(null);
-	         setForeground(null);
-	         if (value != null && ((Mil1553Packet) value).status == EMilPacketStatus.eFAILED)
-	            setForeground(Color.RED);
-
-	         return superRenderer;
-	      }
+		private static final long serialVersionUID = -8889521324387989571L;	
+		@Override
+		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+			Component superRenderer = super.getListCellRendererComponent(list, value, index, isSelected,cellHasFocus);
+				         
+			setBackground(null);
+			setForeground(null);
+			if (value != null && ((Mil1553Packet) value).status == EMilPacketStatus.eFAILED)
+				setForeground(Color.RED);
+			
+			return superRenderer;
+	    }
 	}
 
 class ActionListenerController extends MouseAdapter implements ActionListener {
@@ -435,13 +432,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			        	for(int i = 0; i < listSize; i++)
 			        	{
 			        		Mil1553Packet packet = list.getModel().getElementAt(i);
-			        		int dwsize = Mil1553Packet.getWordsCount(packet.commandWord);
-			        		
-			        		for(int j = 0; j < dwsize; j++)
-			        		{
-			        			fos.write((byte) ((packet.dataWords[j] >> 8) & 0xff));
-			        			fos.write((byte) (packet.dataWords[j] & 0xff));
-			        		}
+			        		fos.write(packet.dataWordsAsByteArray());
 			        	}
 			        
 			        }

@@ -114,7 +114,6 @@ public class MKABrkBck implements IMil1553Decoder {
 			Double d = bb.getDouble();
 			lblTime.setText(d.toString());
 			
-			
 			sb.append(String.format("time %f <br>", d));
 			
 			Short s = bb.getShort();
@@ -139,7 +138,6 @@ public class MKABrkBck implements IMil1553Decoder {
 			i=bb.getInt();
 			lblWorkMode.setText(i.toString());
 			sb.append(String.format("workMode %d <br>", i));
-			
 			packet.decodeHTMLString = sb.toString();
 			packet.shortDescr =  String.format("ТМИ БЦК осн");
 		}
@@ -149,8 +147,6 @@ public class MKABrkBck implements IMil1553Decoder {
 
 	@Override
 	public JComponent getGui() {
-		//JPanel panel = new JPanel();
-		//panel.setSize(694, 400);
 		return panel;
 	}
 

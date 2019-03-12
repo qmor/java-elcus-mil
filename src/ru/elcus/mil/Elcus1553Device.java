@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Assert;
 
@@ -523,7 +524,7 @@ public class Elcus1553Device {
 
 	private List<IMilMsgReceivedListener> msgReceivedListeners = new ArrayList<>();
 	private List<DebugReceivedListener> DebugReceivedListeners = new ArrayList<>();
-	private List<Mil1553Packet> packetsForSendBC = new ArrayList<>();	
+	private ConcurrentLinkedQueue<Mil1553Packet> packetsForSendBC = new ConcurrentLinkedQueue<>();	
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
@@ -651,7 +652,7 @@ public class Elcus1553Device {
 		Pointer pBuffer = new Memory(64*2);		
 		while(threadRunning)
 		{
-			events = tmkwaitevents(1<<cardNumber, 50);
+			events = tmkwaitevents(1<<cardNumber, 10);
 			if (events==(1<<cardNumber))
 			{
 				synchronized (syncObject) {	
@@ -737,7 +738,7 @@ public class Elcus1553Device {
 			}
 			if (!packetsForSendBC.isEmpty())
 			{
-				Mil1553Packet msg = packetsForSendBC.get(0);
+				Mil1553Packet msg = packetsForSendBC.poll();
 				msg.format = Mil1553Packet.calcFormat(msg.commandWord);
 				synchronized (syncObject) {
 					tmkselect();
@@ -850,9 +851,31 @@ public class Elcus1553Device {
 			}
 		}
 	}
-
+	
+	boolean listenthreadwork = true;
+	
 	private void listenLoopMT()
 	{
+		
+		ConcurrentLinkedQueue<Mil1553Packet> list = new ConcurrentLinkedQueue<>();
+		Thread listenerThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (listenthreadwork == true)
+				{
+					Mil1553Packet packet = list.poll();
+					if (packet!=null)
+					for (IMilMsgReceivedListener listener: msgReceivedListeners)
+					{
+						listener.msgReceived(packet);
+					}
+				}
+			}
+		});
+		listenerThread.start();
+		
 		int events = 0;
 		int waitingtime = 10;
 		
@@ -868,7 +891,6 @@ public class Elcus1553Device {
 				synchronized (syncObject) {
 					tmkselect();
 					tmkgetevd(eventData);
-
 
 					if (eventData.nInt == 3)
 					{
@@ -890,24 +912,19 @@ public class Elcus1553Device {
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
 						
-
-			
-							for (IMilMsgReceivedListener listener: msgReceivedListeners)
-							{
-								listener.msgReceived(packet);
-							}
+							list.add(packet);
 							++mtLastBase;
 							if (mtLastBase > mtMaxBase)
 								mtLastBase = 0;
-
 						}
 					}
 				}
 			}
-
 		}
-
+		listenthreadwork = false;
+		listenerThread.stop();
 	}
+	
 	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
 	{
 		int result = 0;

@@ -1,6 +1,8 @@
 package ru.elcus.mil.guitest;
 
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -10,8 +12,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.DefaultListModel;
+import javax.swing.SwingUtilities;
 
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.Mil1553RawPacketMT;
@@ -21,19 +26,51 @@ import ru.elcus.mildecoders.IMil1553Decoder;
 
 public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 
+	
+	final String metasql = "INSERT INTO metadata "
+			+ "(`CommandWord`, `AnswerWord`, `Date`, `DataWords`, `SW`) "
+			+ "VALUES "
+			+ "(?, ?, ?, ?, ?)";
+	
 	private static final long serialVersionUID = 4887147732114211340L;	
 	private String dbFolder;
 	private static final String tablename = "metadata";	
 	private Connection conn;
+	Timer flushTimer = new Timer(true);
+	
 	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
 	
 	MTListViewModel(String dbFolder){
 		this.dbFolder = "jdbc:sqlite:" + dbFolder;
+		
+		
+		flushTimer.schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				try
+				{
+					if (insertPrepareStatement!=null)
+					{
+						insertPrepareStatement.executeBatch();
+					}
+				}
+				catch (Exception ex)
+				{
+					System.out.println(ex.getLocalizedMessage());
+				}
+				
+			}
+		}, 200, 100);		
 	}
 	
 	public boolean checkConn(){
 		return (conn != null) ? true : false;
 	}
+	
+	PreparedStatement insertPrepareStatement = null;
+	
+	public MTListViewModel(){}
 	
 	public void setConnection(String dbname){
         try {
@@ -41,7 +78,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             String url = dbFolder + dbname;
             // create a connection to the database
             conn = DriverManager.getConnection(url);
-            
+            insertPrepareStatement = conn.prepareStatement(metasql);
             System.out.println("Connection to SQLite has been established.");
             
         } catch (SQLException e) {
@@ -71,6 +108,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
                         + ");";
                 
                 stmt.execute(sql);
+                insertPrepareStatement = conn.prepareStatement(metasql);
         	}
  
         } catch (SQLException e) {
@@ -94,39 +132,29 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	}
 	
 	void insertElementAndAddToList(Mil1553Packet packet){
-			if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
-				decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
-			
-			addElement(packet);
-			
-			String metasql = "INSERT INTO metadata "
-					+ "(`CommandWord`, `AnswerWord`, `Date`, `DataWords`, `SW`) "
-					+ "VALUES "
-					+ "(?, ?, ?, ?, ?)";
-			
-			
-			try (PreparedStatement pstmt = conn.prepareStatement(metasql)) {
-	            
-				pstmt.setString(1, String.format("%04x", packet.commandWord));
-				pstmt.setString(2, String.format("%04x",packet.answerWord));
-				pstmt.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
-				pstmt.setString(5, String.valueOf(packet.sw));
-			
-				String DataWords = "";
-				int len = packet.dataWords.length;
-				for(int i = 0; i < len; i++)
-				{
-					DataWords += String.valueOf(packet.dataWords[i]);
-					if(i < len - 1)
-						DataWords += ",";
-				}
-				pstmt.setString(4, DataWords);
+		if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
+			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
+		synchronized (this) {
+			SwingUtilities.invokeLater(new Runnable() {
 					
-	            pstmt.executeUpdate();
+				@Override
+				public void run() {
+					addElement(packet);
+				}
+			});	
+		}			
+
+		try {	            
+			insertPrepareStatement.setString(1, String.format("%04x", packet.commandWord));
+			insertPrepareStatement.setString(2, String.format("%04x",packet.answerWord));
+			insertPrepareStatement.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
+			insertPrepareStatement.setString(5, String.valueOf(packet.sw));
+			insertPrepareStatement.setBytes(4, packet.dataWordsAsByteArray());
+			insertPrepareStatement.addBatch();
 	            
-	        } catch (SQLException e) {
-	            System.out.println(e.getMessage());
-	        }		
+	    } catch (SQLException e) {
+	        System.out.println(e.getMessage());
+	    }		
 	}
 	
 	DefaultListModel<Mil1553Packet> getListByQuery(String where){
@@ -152,11 +180,13 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
             	
             	basedata[0] = cw;
             	
-            	int i = 0;
-            	for(String el : rs.getString("DataWords").split(","))
-            		dw[i++] = Short.parseShort(el);
+            	ByteBuffer byteBuf = ByteBuffer.wrap(rs.getBytes("DataWords"));
+            	byteBuf.order(ByteOrder.LITTLE_ENDIAN);
+            	for (int i = 0; i < dw.length; i++) {										
+            			dw[i] = byteBuf.getShort();
+				}
             	
-            	i = Mil1553Packet.getWordsCount(cw);
+            	int i = Mil1553Packet.getWordsCount(cw);
     			if (i == 0) 
     				i = 32;
     			
@@ -190,20 +220,16 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
         		
         		packet.date = TimeManipulation.getDateTimeFromUnixUTC(rs.getDouble("Date"));
-        		 
+        		
             	list.addElement(packet);
-            }
-            
-            return list;
+            }           
+            return list;  
             
         } catch (SQLException e) {
             System.out.println(e.getMessage());
-        }
-		
-	
+        }	
 		return null;
 	}
-	
 	
 	@Override
 	protected void finalize(){
