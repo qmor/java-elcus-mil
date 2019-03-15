@@ -20,12 +20,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
 
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -33,6 +31,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -47,6 +46,7 @@ import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mildecoders.ClassByNameHelper;
 import ru.elcus.mildecoders.IMil1553Decoder;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 
 
 public class MTTest {
@@ -54,7 +54,7 @@ public class MTTest {
 	private JFrame frame;
 	private JButton btnStart, btnStop, btnSql;
 	private JSpinner spinner;
-	private JList<Mil1553Packet> list;
+	private JTable table;
 	private JTextArea textArea;
 	private JScrollBar verticalBar;
 	private AdjustmentListener adjlistener;
@@ -165,8 +165,6 @@ public class MTTest {
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(spinner, "cell 2 0,growx");
 		
-		list = new JList<Mil1553Packet>();
-		list.setCellRenderer(new FaildItemsOfListRenderer());
 		
 		btnStart = new JButton("Запуск монитора");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -204,8 +202,9 @@ public class MTTest {
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 5 3 3,grow");
 		
-		list.setModel(model);
-		scrollPane.setViewportView(list);
+		table = new JTable(model);
+		scrollPane.setViewportView(table);
+		table.getColumnModel().getColumn(0).setCellRenderer(new FaildItemsOfListRenderer());
 		
 		htmlbtn = new JButton("Выгрузить в html");
 		htmlbtn.addActionListener(new ActionListenerController(btnStatus.gethtmlfile));
@@ -242,16 +241,17 @@ public class MTTest {
 
 		binbutton.addActionListener(new ActionListenerController(btnStatus.getbinfile));
 		
-		list.addMouseListener(new ActionListenerController(btnStatus.getPacket));
+		table.addMouseListener(new ActionListenerController(btnStatus.getPacket));
 		
 	}
 	
-	private class FaildItemsOfListRenderer extends DefaultListCellRenderer {
+	private class FaildItemsOfListRenderer extends DefaultTableCellRenderer {
 		
 		private static final long serialVersionUID = -8889521324387989571L;	
 		@Override
-		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-			Component superRenderer = super.getListCellRendererComponent(list, value, index, isSelected,cellHasFocus);
+		public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int col) {
+			Component superRenderer = super.getTableCellRendererComponent(table, value, isSelected,hasFocus, row, col);
 				         
 			setBackground(null);
 			setForeground(null);
@@ -271,12 +271,12 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 		}
 		
 		private void getPacket(){
-			if(!list.isSelectionEmpty())
+			if(!table.getSelectionModel().isSelectionEmpty())
 			{
 				EventQueue.invokeLater(new Runnable() {
 					public void run() {
 						try {
-							MTPacketGUI window = new MTPacketGUI(list.getSelectedValue());
+							MTPacketGUI window = new MTPacketGUI((Mil1553Packet) table.getValueAt(table.getSelectedRow(),0));
 							window.frame.setVisible(true);
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -316,7 +316,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			}
 			else
 			{
-				model.removeAllElements();
+				model.setRowCount(0);
 				setDevicePause(false);
 			}
 		}
@@ -345,10 +345,10 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 		}
 		
 		private void setListByQuery(String query){
-			model.removeAllElements();
+			model.setRowCount(0);
 			try
 			{
-				list.setModel(model.getListByQuery(query));
+				table.setModel(model.getListByQuery(query));
 			}
 			catch(java.lang.IllegalArgumentException e1)
 			{
@@ -380,7 +380,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 		
 		private void getHTMLfile()
 		{
-			int listSize = list.getModel().getSize();
+			int listSize = table.getModel().getRowCount();
 			
 			if(listSize > 0)
 			{
@@ -396,7 +396,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						bw.write("<!DOCTYPE html><head><meta charset='UTF-8' /><title>" + statusDB.getText() + "</title><style>ul{list-style:none;} .wrap{ max-width:300px;margin:0 auto;border:1px solid black;} .wrap h3{text-align:center;border-bottom:1px solid black;padding-bottom:15px;}</style></head><body><h1 align='center'>" + statusDB.getText() + "</h1>");
 						
 							for(int i = 0; i < listSize; i++)
-								bw.write(getHTMLpacket(list.getModel().getElementAt(i), i));
+								bw.write(getHTMLpacket((Mil1553Packet) table.getModel().getValueAt(i,0), i));
 							
 						bw.write("</body></html>");
 							
@@ -416,7 +416,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 		
 		private void getBinFile()
 		{
-			int listSize = list.getModel().getSize();
+			int listSize = table.getModel().getRowCount();
 			
 			if(listSize > 0)
 			{
@@ -431,7 +431,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			        {			        	
 			        	for(int i = 0; i < listSize; i++)
 			        	{
-			        		Mil1553Packet packet = list.getModel().getElementAt(i);
+			        		Mil1553Packet packet = (Mil1553Packet) table.getModel().getValueAt(i,0);
 			        		fos.write(packet.dataWordsAsByteArray());
 			        	}
 			        
@@ -464,6 +464,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						chooseDB.setEnabled(false);
 						htmlbtn.setEnabled(false);
 						binbutton.setEnabled(false);
+						spinner.setEnabled(false);
 						
 						String filename = model.createNewDBConn();
 						if(filename != "")
@@ -473,7 +474,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						}
 						
 						mtStart();
-						list.setModel(model);
+						table.setModel(model);
 					}
 					
 					adjlistener = new AdjustmentListener() {
@@ -530,7 +531,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						setListByQuery("");
 					}
 					
-					if(list.getModel().getSize() == 0)
+					if(table.getModel().getRowCount() == 0)
 					{
 						htmlbtn.setEnabled(false);
 						binbutton.setEnabled(false);

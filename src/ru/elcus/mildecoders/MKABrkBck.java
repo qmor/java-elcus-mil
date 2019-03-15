@@ -20,10 +20,12 @@ public class MKABrkBck implements IMil1553Decoder {
 	private JLabel lblWritePointer;
 	private JLabel lblReadPointer;
 	private JLabel lblWorkMode;
+	private JLabel lblNewLabel_5;
+	private JLabel labelBRKtmi;
 	
 	public MKABrkBck() {
 	panel = new JPanel();
-	panel.setLayout(new MigLayout("", "[][19.00][][][][]", "[][][][][][]"));
+	panel.setLayout(new MigLayout("", "[][19.00][][][][]", "[][][][][][][]"));
 	
 	JLabel lblNewLabel = new JLabel("Время");
 	panel.add(lblNewLabel, "cell 0 0");
@@ -60,6 +62,12 @@ public class MKABrkBck implements IMil1553Decoder {
 	
 	lblWorkMode = new JLabel("0");
 	panel.add(lblWorkMode, "cell 1 5");
+	
+	lblNewLabel_5 = new JLabel("ТМИ БРК");
+	panel.add(lblNewLabel_5, "cell 0 6");
+	
+	labelBRKtmi = new JLabel("0");
+	panel.add(labelBRKtmi, "cell 1 6");
 	}
 	
 	@Override
@@ -72,6 +80,18 @@ public class MKABrkBck implements IMil1553Decoder {
 		this.name = name;
 		this.rt = rt;
 		
+	}
+	private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String bytesToHex(byte[] bytes,int offset,int len) {
+		if (bytes==null)
+			return null;
+		char[] hexChars = new char[len * 2];
+		for ( int j = offset; j < offset+len; j++ ) {
+			int v = bytes[j] & 0xFF;
+			hexChars[(j-offset) * 2] = hexArray[v >>> 4];
+			hexChars[(j-offset) * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
 	}
 
 	@Override
@@ -98,6 +118,7 @@ public class MKABrkBck implements IMil1553Decoder {
 		{
 			packet.decodeHTMLString = String.format("ТМИ КИС %d",sa-28 );
 			packet.shortDescr =  String.format("ТМИ КИС %d",sa-28 );
+			labelBRKtmi.setText(bytesToHex(packet.dataWordsAsByteArray(),0,64));
 		}
 		else if (rtr==1 && sa>12&& sa<=28)
 		{
@@ -114,33 +135,34 @@ public class MKABrkBck implements IMil1553Decoder {
 			Double d = bb.getDouble();
 			lblTime.setText(d.toString());
 			
-			sb.append(String.format("time %f <br>", d));
+			sb.append(String.format("Время %f <br>", d));
 			
 			Short s = bb.getShort();
 			lblFrameType.setText(s.toString());
 			
-			sb.append(String.format("frametype %d <br>", s));
+			sb.append(String.format("Тип кадра %d <br>", s));
 			
 			s=bb.getShort();
 			lblReplayMode.setText(s.toString());
 			
-			sb.append(String.format("replaytype %d <br>", s));
+			sb.append(String.format("Режим воспроизведения %d <br>", s));
 			
 			
 			Integer i = bb.getInt();
 			lblWritePointer.setText(i.toString());
-			sb.append(String.format("wpointer %d <br>", i));
+			sb.append(String.format("Указатель записи %d <br>", i));
 			
 			i = bb.getInt();
 			lblReadPointer.setText(i.toString());
-			sb.append(String.format("rpointer %d <br>", i));
+			sb.append(String.format("Указатель воспроизведения %d <br>", i));
 			
 			i=bb.getInt();
 			lblWorkMode.setText(i.toString());
-			sb.append(String.format("workMode %d <br>", i));
+			sb.append(String.format("Режим работы %d <br>", i));
 			packet.decodeHTMLString = sb.toString();
 			packet.shortDescr =  String.format("ТМИ БЦК осн");
 		}
+
 		
 		
 	}

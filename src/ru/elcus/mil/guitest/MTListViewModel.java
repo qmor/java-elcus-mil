@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.swing.DefaultListModel;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
 
 import ru.elcus.mil.Mil1553Packet;
 import ru.elcus.mil.Mil1553RawPacketMT;
@@ -24,7 +24,7 @@ import ru.elcus.mil.TimeManipulation;
 import ru.elcus.mil.structs.EMilFormat;
 import ru.elcus.mildecoders.IMil1553Decoder;
 
-public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
+public class MTListViewModel extends DefaultTableModel{
 
 	
 	final String metasql = "INSERT INTO metadata "
@@ -39,6 +39,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	Timer flushTimer = new Timer(true);
 	
 	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
+	private String column_names[]= {"Packets"};
 	
 	MTListViewModel(String dbFolder){
 		this.dbFolder = "jdbc:sqlite:" + dbFolder;
@@ -64,6 +65,16 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 		}, 200, 100);		
 	}
 	
+	@Override
+	public int getColumnCount() {
+		return 1;
+	}	
+	
+    @Override 
+    public String getColumnName(int index) { 
+        return column_names[index]; 
+    } 
+    
 	public boolean checkConn(){
 		return (conn != null) ? true : false;
 	}
@@ -139,7 +150,7 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 					
 				@Override
 				public void run() {
-					addElement(packet);
+					addRow(new Object[]{packet});
 				}
 			});	
 		}			
@@ -157,15 +168,13 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
 	    }		
 	}
 	
-	DefaultListModel<Mil1553Packet> getListByQuery(String where){
+	DefaultTableModel getListByQuery(String where){
 		String sql = "SELECT * FROM " + tablename;
 		if(!where.isEmpty())
 			sql += " WHERE " + where;
 		
 		try (Statement stmt  = conn.createStatement();
-            ResultSet rs    = stmt.executeQuery(sql)) {
-			
-			DefaultListModel<Mil1553Packet> list = new DefaultListModel<Mil1553Packet>();
+            ResultSet rs    = stmt.executeQuery(sql)) {			
         	
 			Mil1553Packet packet;
 
@@ -221,9 +230,9 @@ public class MTListViewModel extends DefaultListModel<Mil1553Packet> {
         		
         		packet.date = TimeManipulation.getDateTimeFromUnixUTC(rs.getDouble("Date"));
         		
-            	list.addElement(packet);
+        		this.addRow(new Object[]{packet});
             }           
-            return list;  
+            return this;  
             
         } catch (SQLException e) {
             System.out.println(e.getMessage());

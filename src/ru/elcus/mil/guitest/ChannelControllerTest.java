@@ -149,6 +149,7 @@ public class ChannelControllerTest {
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
 					});
+					spinner.setEnabled(false);
 				}
 				Mil1553Packet packet = model.getPacket();
 				packet.bus=line1.isSelected()?EBus.eBusA:EBus.eBusB;

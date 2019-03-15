@@ -16,6 +16,7 @@ import ru.elcus.mil.MilWorkMode;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JLabel;
 import javax.swing.DefaultListModel;
@@ -99,11 +100,21 @@ public class RTTest {
 						e1.printStackTrace();
 					}										
 					device.addMsgReceivedListener((msg)->{
-						modelPacket.addElement(msg.toString());
+						synchronized (this) {
+							SwingUtilities.invokeLater(new Runnable() {								
+								@Override
+								public void run() {
+									modelPacket.addElement(msg.toString());
+								}
+							});	
+						}
 					});
+					card_number.setEnabled(false);
+					RtAddress.setEnabled(false);
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
 					});
+					
 					modelPacket.addElement("Successful start");
 				}
 				else{
