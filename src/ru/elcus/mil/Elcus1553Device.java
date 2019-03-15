@@ -1,8 +1,10 @@
 package ru.elcus.mil;
 
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Assert;
 
@@ -20,6 +22,7 @@ import ru.elcus.mil.structs.TTmkEventData;
  * @author qmor
  *
  */
+
 public class Elcus1553Device {
 
 
@@ -127,6 +130,7 @@ public class Elcus1553Device {
 	static final int DNBA =0x10;
 
 	static final int CWB0 =0x20;
+	
 	static final int CWB1 =0x40;
 
 	static final int BC_MODE =0x00;
@@ -508,7 +512,8 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 
-
+	boolean paused=true;
+	int mtLastBase = 0;
 	private Thread runnerThread;
 
 	private boolean threadRunning = false;
@@ -518,12 +523,14 @@ public class Elcus1553Device {
 	}
 
 	private List<IMilMsgReceivedListener> msgReceivedListeners = new ArrayList<>();
-	private List<Mil1553Packet> packetsForSendBC = new ArrayList<>();
+	private List<DebugReceivedListener> DebugReceivedListeners = new ArrayList<>();
+	private ConcurrentLinkedQueue<Mil1553Packet> packetsForSendBC = new ConcurrentLinkedQueue<>();	
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
+	
 	public MilWorkMode getWorkMode() {
 		return workMode;
 	}
@@ -533,18 +540,45 @@ public class Elcus1553Device {
 	{
 		msgReceivedListeners.add(listener);
 	}
+	
+	public void addDebugReceivedListener(DebugReceivedListener listener)
+	{
+		DebugReceivedListeners.add(listener);
+	}
+	
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
-		if (workMode==MilWorkMode.eMilWorkModeRT)
+		if (workMode.equals(MilWorkMode.eMilWorkModeRT))
+		{
+			synchronized (syncObject) {
+				int result  = tmkselect();
+				if (result!=0)
+					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
+				
+				if(paused != pause)
+				{
+					result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+					paused = !paused;
+				}
+				if (result!=0)
+				{
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
+				}
+			}
+		}
+
+		else if(workMode.equals(MilWorkMode.eMilWorkModeMT))
 		{
 			synchronized (syncObject) {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setRtAddress() "+result); 
-				result = rtenable(pause?RT_DISABLE:RT_ENABLE);
+
+				result = (pause) ? mtstop() : mtstartx(mtLastBase, (CX_CONT | CX_NOINT | CX_NOSIG));
+
 				if (result!=0)
 				{
-					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setRtAddress() "+result); 
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress в функции setPause() "+result); 
 				}
 			}
 		}
@@ -576,32 +610,38 @@ public class Elcus1553Device {
 			Integer rtrBit = Mil1553Packet.getRTRBit(packet.commandWord);
 			Integer wordcountModeCode = Mil1553Packet.getWordsCount(packet.commandWord);
 			if (rtrBit==1)
-			{
-
+			{				
 				if (subaddressMode!=0 && subaddressMode!=31)
 				{
 					if (wordcountModeCode == 0) wordcountModeCode=32;
 					rtdefsubaddr(RT_TRANSMIT,subaddressMode);
 					while(rtbusy()==1)
 					{
-						//Debug() << "wait for rtbusy" << msg_show;
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("Wait for rtbusy");
+						}
 					}
 					rtSendPBuffer.write(0, packet.dataWords, 0, 32);
 					rtputblk(0,rtSendPBuffer,wordcountModeCode);
 				}
 				else //if Mode
 				{
-
 					rtputcmddata(packet.commandWord & ((1<<10) | 31), (int)packet.dataWords[0]); // first dataword is for CMD data
 				}
 			}
 		}
 	}
+			
 	public void sendPacket(Mil1553Packet packet)
 	{
 		if (workMode == MilWorkMode.eMilWorkModeRT)
 		{
 			sendPacketRT(packet);
+		}
+		else if(workMode == MilWorkMode.eMilWorkModeBC)
+		{
+			packetsForSendBC.add(packet);
 		}
 	}
 	private void listenLoopBC()
@@ -609,21 +649,19 @@ public class Elcus1553Device {
 		int events;
 		TTmkEventData eventData = new TTmkEventData();
 		Mil1553Packet Msg = new Mil1553Packet();
-		Pointer pBuffer = new Memory(64*2);
+		Pointer pBuffer = new Memory(64*2);		
 		while(threadRunning)
 		{
-			events = tmkwaitevents(1<<cardNumber, 50);
+			events = tmkwaitevents(1<<cardNumber, 10);
 			if (events==(1<<cardNumber))
 			{
-				synchronized (syncObject) {
-
-
+				synchronized (syncObject) {	
 					tmkselect();
 					tmkgetevd(eventData);
 					bcdefbase(0);
-
 					Msg.commandWord = (short) bcgetw(0);
 					Msg.format = Mil1553Packet.calcFormat(Msg.commandWord);
+					Msg.date = LocalDateTime.now();
 					Integer cmdcodeWordCount = Mil1553Packet.getWordsCount(Msg.commandWord);
 					switch(Msg.format)
 					{
@@ -646,55 +684,61 @@ public class Elcus1553Device {
 						break;
 					case CC_FMT_6:
 						Msg.answerWord = (short) bcgetw(2);
-						Msg.dataWords[0] = (short) bcgetw(1);
+						Msg.dataWords[0] = (short) bcgetw(1);						
 						break;
-						default :
-							break;
+					default :
+						break;
 					}
-
-
 					if (eventData.nInt==1)
 					{
 						if (!packetsForSendBC.isEmpty())
 							packetsForSendBC.remove(0);
-						
+
 						Msg.status = EMilPacketStatus.eRECEIVED;
 					}
+					
 					if (eventData.nInt==2)
 					{
-						Msg.status = EMilPacketStatus.eFAILED;
-						/*
-					Msg.Status = Mil1553ExchangeStatus::RECEIVE_TIMEOUT;
-					if (BC_MessagesVector.size())
-					{
-						BC_MessagesVector.erase(BC_MessagesVector.begin());
-					}
-                    if (tmkEvD.bc.wResult & S_ERAO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error in a field of the address received RW is found out" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_MEO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error of a code 'Manchester - 2' is found out at answer RT" << msg_show;
-
-					else if (tmkEvD.bc.wResult & S_EBC_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The error of the echo - control over transfer BC is found out" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_TO_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() It is not received the answer from RT" << msg_show;
-
-                    else if (tmkEvD.bc.wResult & S_IB_MASK)
-                        Error()  <<"Elcus1553Device::ListenLoopBC() The established bits in received RW are found out" << msg_show;
-						 */
-					}
+						Msg.status = EMilPacketStatus.eFAILED;																		
+						if (!packetsForSendBC.isEmpty())
+						{
+							packetsForSendBC.clear();
+						}
+	                    if (eventData.union.bc.wResult==S_ERAO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error in a field of the address received RW is found out");
+							}	
+	                    else if (eventData.union.bc.wResult == S_MEO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error of a code 'Manchester - 2' is found out at answer RT");
+							}	                        	
+						else if (eventData.union.bc.wResult == S_EBC_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The error of the echo - control over transfer BC is found out");
+							}	
+	                    else if (eventData.union.bc.wResult == S_TO_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("It is not received the answer from RT");
+							}	
+	                    else if (eventData.union.bc.wResult == S_IB_MASK)
+							for (DebugReceivedListener listener: DebugReceivedListeners)
+							{
+								listener.msgReceived("The established bits in received RW are found out");
+							}
+					}	
 					for (IMilMsgReceivedListener listener: msgReceivedListeners)
 					{
 						listener.msgReceived(Msg);
-					}
+					}	
 				}
-
 			}
 			if (!packetsForSendBC.isEmpty())
 			{
-				Mil1553Packet msg = packetsForSendBC.get(0);
+				Mil1553Packet msg = packetsForSendBC.poll();
 				msg.format = Mil1553Packet.calcFormat(msg.commandWord);
 				synchronized (syncObject) {
 					tmkselect();
@@ -702,8 +746,8 @@ public class Elcus1553Device {
 					{
 						pBuffer.setShort(0, msg.commandWord);
 						for (int i=0;i<32;i++)
-							pBuffer.setShort(i+1, msg.dataWords[i]);
-						
+							pBuffer.setShort(i*2+2, msg.dataWords[i]);
+
 						bcdefbase(0);
 						bcputblk(0, pBuffer, (short)64);
 						bcdefbus(msg.bus.toInt());
@@ -715,7 +759,7 @@ public class Elcus1553Device {
 						bcdefbase(0);
 						bcputw(0,msg.commandWord);
 						bcdefbus(msg.bus.toInt());
-						bcstart(0,DATA_RT_BC);
+						bcstart(0,DATA_RT_BC);	
 						msg.status = EMilPacketStatus.eSENT;
 					}
 					else if (msg.format.equals(EMilFormat.CC_FMT_4) || msg.format.equals(EMilFormat.CC_FMT_5))
@@ -738,12 +782,15 @@ public class Elcus1553Device {
 					}
 					else
 					{
-						//Debug() << "Elcus1553Device::ProcessBC: exchange format is not realized yet" << msg_show;
-					}
+						packetsForSendBC.remove(0);
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("Exchange format is not realized yet");
+						}	
+					}															
 				}
 			}
 		}
-
 	}
 
 	private void listenLoopRT()
@@ -764,9 +811,11 @@ public class Elcus1553Device {
 					tmkgetevd(eventData);
 					if (eventData.nInt == 1)//rtIntCmd
 					{
-						Msg.commandWord = eventData.union.rt.wCmd;
+						Msg.commandWord = eventData.union.rt.wCmd; 
 						Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
-
+						Msg.date = LocalDateTime.now();
+						Msg.status = EMilPacketStatus.eRECEIVED;	
+						
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -774,9 +823,12 @@ public class Elcus1553Device {
 
 					}
 					else if (eventData.nInt == 2)//rtIntErr
-					{
-						//Info() << L"RT has found out a error in the command addressed to it "<< QString().sprintf("%04X",tmkEvD.rt.wStatus) << msg_show;
-						//Info() << "Word of a condition RT: " << QString().sprintf("%04X", tmkEvD.rt.wCmd) << msg_show;
+					{			
+						for (DebugReceivedListener listener: DebugReceivedListeners)
+						{
+							listener.msgReceived("RT has found out a error in the command addressed to it "+String.format("%04X",eventData.union.rt.wStatus));
+							listener.msgReceived("Word of a condition RT: "+String.format("%04X",eventData.union.rt.wCmd));
+						}
 					}
 					else if (eventData.nInt == 3)//rtIntData
 					{
@@ -787,7 +839,9 @@ public class Elcus1553Device {
 						rtgetblk(0, pBuffer, len);
 						short[] buffer = pBuffer.getShortArray(0,32); 
 						System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
-
+						Msg.date = LocalDateTime.now();
+						Msg.status = EMilPacketStatus.eRECEIVED;						
+						
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -797,12 +851,34 @@ public class Elcus1553Device {
 			}
 		}
 	}
-
+	
+	boolean listenthreadwork = true;
+	
 	private void listenLoopMT()
 	{
+		
+		ConcurrentLinkedQueue<Mil1553Packet> list = new ConcurrentLinkedQueue<>();
+		Thread listenerThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (listenthreadwork == true)
+				{
+					Mil1553Packet packet = list.poll();
+					if (packet!=null)
+					for (IMilMsgReceivedListener listener: msgReceivedListeners)
+					{
+						listener.msgReceived(packet);
+					}
+				}
+			}
+		});
+		listenerThread.start();
+		
 		int events = 0;
 		int waitingtime = 10;
-		int mtLastBase = 0;
+		
 		int res=0;
 		TTmkEventData eventData = new TTmkEventData();
 		int sw;
@@ -815,7 +891,6 @@ public class Elcus1553Device {
 				synchronized (syncObject) {
 					tmkselect();
 					tmkgetevd(eventData);
-
 
 					if (eventData.nInt == 3)
 					{
@@ -831,29 +906,25 @@ public class Elcus1553Device {
 							int statusword = eventData.union.mt.wResultX;
 
 							mtgetblk(0, pBuffer, 64);
-							short[] buffer = pBuffer.getShortArray(0,64); 
+							short[] buffer = pBuffer.getShortArray(0,64); //TODO: где то тут есть ошибка
 
-							//buffer[63] = (short)(statusword&0xff);
-							//buffer[58] = (short)sw;
-							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,(short)sw,(short)statusword);
+					
+							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
-							packet.status = EMilPacketStatus.eRECEIVED;
-							for (IMilMsgReceivedListener listener: msgReceivedListeners)
-							{
-								listener.msgReceived(packet);
-							}
+						
+							list.add(packet);
 							++mtLastBase;
 							if (mtLastBase > mtMaxBase)
 								mtLastBase = 0;
-
 						}
 					}
 				}
 			}
-
 		}
-
+		listenthreadwork = false;
+		listenerThread.stop();
 	}
+	
 	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
 	{
 		int result = 0;
@@ -905,15 +976,13 @@ public class Elcus1553Device {
 				result = rtdefaddress(rtAddress);
 				if (result!=0)
 				{
-					throw new Eclus1553Exception(this,"Ошибка rtreset "+result);
+					throw new Eclus1553Exception(this,"Ошибка rtdefaddress "+result);
 				}
 
 				result = rtdefmode(0);
-				result|=rtdefirqmode(0);
+				result|= rtdefirqmode(0);				
 				rtenable(RT_DISABLE);
 				runnerThread = new Thread(this::listenLoopRT);
-
-
 			}
 			else if (demandWorkMode.equals(MilWorkMode.eMilWorkModeBC))
 			{
@@ -983,7 +1052,7 @@ public class Elcus1553Device {
 	}
 	int mtgetsw()
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0));
+		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0);
 	}
 	int tmkconfig()
 	{
@@ -1248,7 +1317,14 @@ public class Elcus1553Device {
 
 	int mtstartx(int mtBase, int mtCtrlCode)
 	{
-		return bcstartx(mtBase,mtCtrlCode);
+		int res = 0;
+		if (paused)
+		{
+			res= bcstartx(mtBase,mtCtrlCode);
+			if (res == 0)
+				paused=false;
+		}
+		return res;
 	}
 	int bcstartx(int bcBase, int bcCtrlCode)
 	{
@@ -1277,7 +1353,15 @@ public class Elcus1553Device {
 
 	int mtstop()
 	{
-		return bcstop();
+		int res = 0;
+		if (!paused)
+		{
+			res= bcstop();
+			if (res == 0)
+				paused=true;
+		}
+		return res;
+		 
 	}
 	int bcstop()
 	{

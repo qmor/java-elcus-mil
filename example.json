@@ -1,0 +1,20 @@
+{
+  "decoders":
+  [
+  	{
+		"name":"STR1",
+		"class":"ru.elcus.mildecoders.MBOKZ2V",
+		"rt":"9"
+	},
+	  	{
+		"name":"STR2",
+		"class":"ru.elcus.mildecoders.MBOKZ2V",
+		"rt":"10"
+	},
+	  	{
+		"name":"BCK",
+		"class":"ru.elcus.mildecoders.MKABrkBck",
+		"rt":"0"
+	}
+  ]
+}

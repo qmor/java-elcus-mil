@@ -10,5 +10,4 @@ public Integer toInt()
 		return 0;
 	return 1;
 }
-
 }
