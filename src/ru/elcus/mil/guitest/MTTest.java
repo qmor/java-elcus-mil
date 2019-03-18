@@ -165,7 +165,6 @@ public class MTTest {
 		spinner.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(spinner, "cell 2 0,growx");
 		
-		
 		btnStart = new JButton("Запуск монитора");
 		btnStart.setFont(new Font("Dialog", Font.BOLD, 14));
 		btnStart.addActionListener(new ActionListenerController(btnStatus.mtStart));
@@ -173,8 +172,7 @@ public class MTTest {
 		
 		btnStop = new JButton("Остановка монитора");
 		btnStop.setEnabled(false);
-		btnStop.addActionListener(new ActionListenerController(btnStatus.mtStop));
-		
+		btnStop.addActionListener(new ActionListenerController(btnStatus.mtStop));		
 		
 		btnStop.setFont(new Font("Dialog", Font.BOLD, 14));
 		panel.add(btnStop, "cell 2 1,growx");
@@ -196,8 +194,7 @@ public class MTTest {
 		panel.add(label_1, "cell 0 4,growx");
 		
 		textArea = new JTextArea();
-		panel.add(textArea, "cell 1 4 2 1,grow");
-		
+		panel.add(textArea, "cell 1 4 2 1,grow");	
 		
 		JScrollPane scrollPane = new JScrollPane();
 		panel.add(scrollPane, "cell 0 5 3 3,grow");
@@ -241,8 +238,7 @@ public class MTTest {
 
 		binbutton.addActionListener(new ActionListenerController(btnStatus.getbinfile));
 		
-		table.addMouseListener(new ActionListenerController(btnStatus.getPacket));
-		
+		table.addMouseListener(new ActionListenerController(btnStatus.getPacket));		
 	}
 	
 	private class FaildItemsOfListRenderer extends DefaultTableCellRenderer {
@@ -264,12 +260,12 @@ public class MTTest {
 
 class ActionListenerController extends MouseAdapter implements ActionListener {
 		private btnStatus st;
-		
+	    
 		public ActionListenerController(btnStatus st)
 		{
 			this.st = st;
 		}
-		
+	    
 		private void getPacket(){
 			if(!table.getSelectionModel().isSelectionEmpty())
 			{
@@ -285,16 +281,17 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 				});
 			}
 		}
-		
-		@Override
+			
 		public void mouseClicked(MouseEvent e){
-			switch(st)
-			{
-				case getPacket:
-					this.getPacket();
-					break;
-				default:
-					break;
+			if (e.getClickCount()==2) {
+				switch(st)
+				{
+					case getPacket:
+						this.getPacket();
+						break;
+					default:
+						break;
+				}
 			}
 		}
 		
