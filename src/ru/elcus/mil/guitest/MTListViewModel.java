@@ -37,32 +37,17 @@ public class MTListViewModel extends DefaultTableModel{
 	private static final String tablename = "metadata";	
 	private Connection conn;
 	Timer flushTimer = new Timer(true);
-	
 	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
 	private String column_names[]= {"Packets"};
 	
 	MTListViewModel(String dbFolder){
-		this.dbFolder = "jdbc:sqlite:" + dbFolder;
-		
-		
-		flushTimer.schedule(new TimerTask() {
-			
+		this.dbFolder = "jdbc:sqlite:" + dbFolder;				
+		flushTimer.schedule(new TimerTask() {			
 			@Override
-			public void run() {
-				try
-				{
-					if (insertPrepareStatement!=null)
-					{						
-						insertPrepareStatement.executeBatch();
-					}
-				}
-				catch (Exception ex)
-				{
-					System.out.println(ex.getLocalizedMessage());
-				}
-				
+			public void run() {								
+				Commit();
 			}
-		}, 200, 100);		
+		}, 200, 5000);		
 	}
 	
 	@Override
@@ -74,6 +59,11 @@ public class MTListViewModel extends DefaultTableModel{
     public String getColumnName(int index) { 
         return column_names[index]; 
     } 
+    
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        return false;
+    }
     
 	public boolean checkConn(){
 		return (conn != null) ? true : false;
@@ -107,8 +97,7 @@ public class MTListViewModel extends DefaultTableModel{
         	if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
-                System.out.println("A new database has been created.");
-                conn.setAutoCommit(false);
+                System.out.println("A new database has been created.");               
                 String sql = "CREATE TABLE IF NOT EXISTS metadata (\n"
                         + "CommandWord,\n"
                         + "AnswerWord,\n"
@@ -128,12 +117,19 @@ public class MTListViewModel extends DefaultTableModel{
         return name;
 	}
 	
+	public void Commit(){
+		try {			
+			if(insertPrepareStatement!=null){
+			insertPrepareStatement.executeBatch();
+			}
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+	}
 	public void closeConn(){
 		try {			
-            if (conn != null){
-            	conn.commit();
+            if (conn != null)
                 conn.close();
-            }
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
@@ -162,8 +158,7 @@ public class MTListViewModel extends DefaultTableModel{
 			insertPrepareStatement.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
 			insertPrepareStatement.setString(5, String.valueOf(packet.sw));
 			insertPrepareStatement.setBytes(4, packet.dataWordsAsByteArray());
-			insertPrepareStatement.addBatch();
-	            
+			insertPrepareStatement.addBatch();        
 	    } catch (SQLException e) {
 	        System.out.println(e.getMessage());
 	    }		
@@ -232,7 +227,7 @@ public class MTListViewModel extends DefaultTableModel{
         		packet.date = TimeManipulation.getDateTimeFromUnixUTC(rs.getDouble("Date"));
         		
         		this.addRow(new Object[]{packet});
-            }           
+            }     
             return this;  
             
         } catch (SQLException e) {

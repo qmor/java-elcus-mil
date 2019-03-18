@@ -281,9 +281,10 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 				});
 			}
 		}
-			
-		public void mouseClicked(MouseEvent e){
-			if (e.getClickCount()==2) {
+		
+		@Override
+		public void mouseClicked(MouseEvent e){			
+			if(e.getClickCount()==2){
 				switch(st)
 				{
 					case getPacket:
@@ -494,7 +495,6 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					binbutton.setEnabled(true);
 					
 					setDevicePause(true);
-					
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
 					
 					verticalBar.removeAdjustmentListener(adjlistener);
