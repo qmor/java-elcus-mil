@@ -192,22 +192,22 @@ public class ChannelControllerTest {
 				return "Data word ["+row+"]";
 			}
 			if (row == 0)
-				return Integer.toHexString(packet.commandWord).toUpperCase();
-			return Integer.toHexString(packet.dataWords[row-1]).toUpperCase();
+				return Integer.toHexString(packet.commandWord & 0xffff).toUpperCase();
+			return Integer.toHexString(packet.dataWords[row-1] & 0xffff).toUpperCase();
 		}
 		
 		@Override
 		public void setValueAt(Object aValue, int row, int column) {	
 			if (row == 0) {
 				try {
-					packet.commandWord=Short.parseShort(aValue.toString(),16);
+					packet.commandWord= (short) Integer.parseInt(aValue.toString(),16);
 				} catch(NumberFormatException e) {
 					modelPacket.addElement(e.getMessage()+"\n");
 				}
 				return;
 			}
 			try {
-				packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
+				packet.dataWords[row-1]=(short) Integer.parseInt(aValue.toString(),16);
 			} catch(NumberFormatException e) {
 				modelPacket.addElement(e.getMessage()+"\n");
 			}

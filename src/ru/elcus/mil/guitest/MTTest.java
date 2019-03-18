@@ -316,9 +316,9 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			}
 			else
 			{
-				model.setRowCount(0);
 				setDevicePause(false);
 			}
+			model.setRowCount(0);
 		}
 		
 		private void setDevicePause(boolean mode){
