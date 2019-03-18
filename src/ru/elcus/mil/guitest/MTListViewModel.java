@@ -52,7 +52,7 @@ public class MTListViewModel extends DefaultTableModel{
 				try
 				{
 					if (insertPrepareStatement!=null)
-					{
+					{						
 						insertPrepareStatement.executeBatch();
 					}
 				}
@@ -84,8 +84,7 @@ public class MTListViewModel extends DefaultTableModel{
 	public MTListViewModel(){}
 	
 	public void setConnection(String dbname){
-        try {
-        	
+        try {   	
             String url = dbFolder + dbname;
             // create a connection to the database
             conn = DriverManager.getConnection(url);
@@ -109,7 +108,7 @@ public class MTListViewModel extends DefaultTableModel{
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
                 System.out.println("A new database has been created.");
-              
+                conn.setAutoCommit(false);
                 String sql = "CREATE TABLE IF NOT EXISTS metadata (\n"
                         + "CommandWord,\n"
                         + "AnswerWord,\n"
@@ -130,9 +129,11 @@ public class MTListViewModel extends DefaultTableModel{
 	}
 	
 	public void closeConn(){
-		try {
-            if (conn != null)
+		try {			
+            if (conn != null){
+            	conn.commit();
                 conn.close();
+            }
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
