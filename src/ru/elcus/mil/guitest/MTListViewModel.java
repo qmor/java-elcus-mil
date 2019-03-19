@@ -45,7 +45,12 @@ public class MTListViewModel extends DefaultTableModel{
 		flushTimer.schedule(new TimerTask() {			
 			@Override
 			public void run() {								
-				Commit();
+				try {
+					Commit();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}, 200, 5000);		
 	}
@@ -92,8 +97,8 @@ public class MTListViewModel extends DefaultTableModel{
 		
         try {
         	conn = DriverManager.getConnection(url);
-        	Statement stmt = conn.createStatement();
-        	
+        	conn.setAutoCommit(false);
+        	Statement stmt = conn.createStatement();        	
         	if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
@@ -109,7 +114,7 @@ public class MTListViewModel extends DefaultTableModel{
                 stmt.execute(sql);
                 insertPrepareStatement = conn.prepareStatement(metasql);
         	}
- 
+        	
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -117,19 +122,27 @@ public class MTListViewModel extends DefaultTableModel{
         return name;
 	}
 	
-	public void Commit(){
+	public void Commit() throws SQLException{
 		try {			
-			if(insertPrepareStatement!=null){
+			
+			if(insertPrepareStatement != null){
 			insertPrepareStatement.executeBatch();
+			conn.commit();
 			}
         } catch (SQLException ex) {
+        	conn.rollback();
             System.out.println(ex.getMessage());
         }
 	}
 	public void closeConn(){
-		try {			
-            if (conn != null)
+		try {	
+			
+            if (insertPrepareStatement != null) 
+				insertPrepareStatement.close();
+            if (conn != null) {
+            	conn.setAutoCommit(true);
                 conn.close();
+            }
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }

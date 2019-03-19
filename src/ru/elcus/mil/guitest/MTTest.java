@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Date;
 
 import javax.swing.JButton;
@@ -494,7 +495,14 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					htmlbtn.setEnabled(true);
 					binbutton.setEnabled(true);
 					
-					setDevicePause(true);
+					setDevicePause(true);					
+					try {
+						model.Commit();
+						model.closeConn();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
 					
 					verticalBar.removeAdjustmentListener(adjlistener);
