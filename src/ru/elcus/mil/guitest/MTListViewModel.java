@@ -123,26 +123,21 @@ public class MTListViewModel extends DefaultTableModel{
 	}
 	
 	public void Commit() throws SQLException{
-		try {			
-			
+		try {					
 			if(insertPrepareStatement != null){
 			insertPrepareStatement.executeBatch();
 			conn.commit();
 			}
         } catch (SQLException ex) {
-        	conn.rollback();
             System.out.println(ex.getMessage());
         }
 	}
 	public void closeConn(){
 		try {	
-			
-            if (insertPrepareStatement != null) 
-				insertPrepareStatement.close();
             if (conn != null) {
-            	conn.setAutoCommit(true);
                 conn.close();
             }
+            flushTimer.cancel();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }

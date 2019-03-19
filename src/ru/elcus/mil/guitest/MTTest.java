@@ -285,16 +285,18 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 		
 		@Override
 		public void mouseClicked(MouseEvent e){			
-			if(e.getClickCount()==2){
 				switch(st)
 				{
-					case getPacket:
-						this.getPacket();
+					case getPacket: {
+						
+						if(e.getClickCount()==2)
+							this.getPacket();
+						
 						break;
+					}
 					default:
 						break;
 				}
-			}
 		}
 		
 		private void mtStart() {
@@ -495,10 +497,11 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					htmlbtn.setEnabled(true);
 					binbutton.setEnabled(true);
 					
-					setDevicePause(true);					
+					setDevicePause(true);	
 					try {
 						model.Commit();
-						model.closeConn();
+						if(model.checkConn())
+							model.closeConn();
 					} catch (SQLException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
