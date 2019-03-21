@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.Assert;
 
 import com.sun.jna.Memory;
+import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 
@@ -130,7 +131,7 @@ public class Elcus1553Device {
 	static final int DNBA =0x10;
 
 	static final int CWB0 =0x20;
-	
+
 	static final int CWB1 =0x40;
 
 	static final int BC_MODE =0x00;
@@ -530,7 +531,7 @@ public class Elcus1553Device {
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
-	
+
 	public MilWorkMode getWorkMode() {
 		return workMode;
 	}
@@ -540,12 +541,12 @@ public class Elcus1553Device {
 	{
 		msgReceivedListeners.add(listener);
 	}
-	
+
 	public void addDebugReceivedListener(DebugReceivedListener listener)
 	{
 		DebugReceivedListeners.add(listener);
 	}
-	
+
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
 		if (workMode.equals(MilWorkMode.eMilWorkModeRT))
@@ -554,7 +555,7 @@ public class Elcus1553Device {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
-				
+
 				if(paused != pause)
 				{
 					result = rtenable(pause?RT_DISABLE:RT_ENABLE);
@@ -632,7 +633,7 @@ public class Elcus1553Device {
 			}
 		}
 	}
-			
+
 	public void sendPacket(Mil1553Packet packet)
 	{
 		if (workMode == MilWorkMode.eMilWorkModeRT)
@@ -696,7 +697,7 @@ public class Elcus1553Device {
 
 						Msg.status = EMilPacketStatus.eRECEIVED;
 					}
-					
+
 					if (eventData.nInt==2)
 					{
 						Msg.status = EMilPacketStatus.eFAILED;																		
@@ -704,12 +705,12 @@ public class Elcus1553Device {
 						{
 							packetsForSendBC.clear();
 						}
-	                    if (eventData.union.bc.wResult==S_ERAO_MASK)
+						if (eventData.union.bc.wResult==S_ERAO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The error in a field of the address received RW is found out");
 							}	
-	                    else if (eventData.union.bc.wResult == S_MEO_MASK)
+						else if (eventData.union.bc.wResult == S_MEO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The error of a code 'Manchester - 2' is found out at answer RT");
@@ -719,12 +720,12 @@ public class Elcus1553Device {
 							{
 								listener.msgReceived("The error of the echo - control over transfer BC is found out");
 							}	
-	                    else if (eventData.union.bc.wResult == S_TO_MASK)
+						else if (eventData.union.bc.wResult == S_TO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("It is not received the answer from RT");
 							}	
-	                    else if (eventData.union.bc.wResult == S_IB_MASK)
+						else if (eventData.union.bc.wResult == S_IB_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The established bits in received RW are found out");
@@ -815,7 +816,7 @@ public class Elcus1553Device {
 						Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
 						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;	
-						
+
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -841,7 +842,7 @@ public class Elcus1553Device {
 						System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
 						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;						
-						
+
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -851,15 +852,15 @@ public class Elcus1553Device {
 			}
 		}
 	}
-	
+
 	boolean listenthreadwork = true;
-	
+
 	private void listenLoopMT()
 	{
-		
+
 		ConcurrentLinkedQueue<Mil1553Packet> list = new ConcurrentLinkedQueue<>();
 		Thread listenerThread = new Thread(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
@@ -867,18 +868,18 @@ public class Elcus1553Device {
 				{
 					Mil1553Packet packet = list.poll();
 					if (packet!=null)
-					for (IMilMsgReceivedListener listener: msgReceivedListeners)
-					{
-						listener.msgReceived(packet);
-					}
+						for (IMilMsgReceivedListener listener: msgReceivedListeners)
+						{
+							listener.msgReceived(packet);
+						}
 				}
 			}
 		});
 		listenerThread.start();
-		
+
 		int events = 0;
 		int waitingtime = 10;
-		
+
 		int res=0;
 		TTmkEventData eventData = new TTmkEventData();
 		int sw;
@@ -908,10 +909,10 @@ public class Elcus1553Device {
 							mtgetblk(0, pBuffer, 64);
 							short[] buffer = pBuffer.getShortArray(0,64); //TODO: где то тут есть ошибка
 
-					
+
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
-						
+
 							list.add(packet);
 							++mtLastBase;
 							if (mtLastBase > mtMaxBase)
@@ -924,7 +925,7 @@ public class Elcus1553Device {
 		listenthreadwork = false;
 		listenerThread.stop();
 	}
-	
+
 	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
 	{
 		int result = 0;
@@ -1035,19 +1036,34 @@ public class Elcus1553Device {
 		if (_hVTMK4VxD != 0)
 			return 0;
 
-		_hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
-		if (_hVTMK4VxD < 0)
+		if (!Platform.isWindows())
 		{
-			ErrorCode = _hVTMK4VxD;
-			_hVTMK4VxD = 0;
-			return ErrorCode;
+			_hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
+			if (_hVTMK4VxD < 0)
+			{
+				ErrorCode = _hVTMK4VxD;
+				_hVTMK4VxD = 0;
+				return ErrorCode;
+			}
 		}
-		if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+		else
 		{
-			CLibrary.INSTANCE.close(_hVTMK4VxD);
-			_hVTMK4VxD = 0;
-			return VTMK_BAD_VERSION;
+			ErrorCode = WdmTmk.INSTANCE.TmkOpen();
+			if (ErrorCode!=0)
+			{
+				System.out.println("TmkOpen error "+ErrorCode);
+			}
 		}
+		if (!Platform.isWindows())
+		{
+			if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+			{
+				CLibrary.INSTANCE.close(_hVTMK4VxD);
+				_hVTMK4VxD = 0;
+				return VTMK_BAD_VERSION;
+			}
+		}
+
 		return 0;
 	}
 	int mtgetsw()
@@ -1060,7 +1076,11 @@ public class Elcus1553Device {
 	}
 	private int tmkconfig(int tmkNumber)
 	{
+		if (!Platform.isWindows())
+		{
 		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);
+		}
+		return WdmTmk.INSTANCE.tmkconfig(tmkNumber);
 	}
 
 	int tmkgetmaxn()
@@ -1083,7 +1103,10 @@ public class Elcus1553Device {
 	}
 	private int tmkselect(int tmkNumber)
 	{
+		if (!Platform.isWindows())
 		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);
+		
+		return WdmTmk.INSTANCE.tmkselect(tmkNumber);
 	}
 
 	int tmkselected()
@@ -1196,7 +1219,10 @@ public class Elcus1553Device {
 
 	int mtreset()
 	{
+		if (!Platform.isWindows())
 		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtreset,0));
+		
+		return WdmTmk.INSTANCE.mtreset();
 	}
 
 	int mtdefirqmode(int mtIrqMode)
@@ -1361,7 +1387,7 @@ public class Elcus1553Device {
 				paused=true;
 		}
 		return res;
-		 
+
 	}
 	int bcstop()
 	{
