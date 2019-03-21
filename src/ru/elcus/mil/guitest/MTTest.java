@@ -219,7 +219,7 @@ public class MTTest {
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				if(verticalBar.getValue() + verticalBar.getModel().getExtent() + 100  >= verticalBar.getMaximum())
+				if(verticalBar.getValue() + verticalBar.getModel().getExtent()>= verticalBar.getMaximum())
 					 verticalBar.addAdjustmentListener(adjlistener);
 			}
 			
@@ -298,7 +298,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						break;
 				}
 		}
-		
+
 		private void mtStart() {
 			if (device==null)
 			{
@@ -497,7 +497,6 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					htmlbtn.setEnabled(true);
 					binbutton.setEnabled(true);
 					
-					setDevicePause(true);	
 					try {
 						model.Commit();
 						if(model.checkConn())
@@ -506,8 +505,8 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					setDevicePause(true);	
 					statusDB.setText("Остановка. БД для просмотра: " + currDBfile.getName());
-					
 					verticalBar.removeAdjustmentListener(adjlistener);
 					
 					break;
@@ -540,7 +539,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					}
 					
 					if(table.getModel().getRowCount() == 0)
-					{
+					{					
 						htmlbtn.setEnabled(false);
 						binbutton.setEnabled(false);
 					}
