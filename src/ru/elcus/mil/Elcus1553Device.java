@@ -3,8 +3,13 @@ package ru.elcus.mil;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Assert;
 
@@ -512,7 +517,7 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 
-	boolean paused=true;
+	boolean paused=false;
 	int mtLastBase = 0;
 	private Thread runnerThread;
 
@@ -524,7 +529,7 @@ public class Elcus1553Device {
 
 	private List<IMilMsgReceivedListener> msgReceivedListeners = new ArrayList<>();
 	private List<DebugReceivedListener> DebugReceivedListeners = new ArrayList<>();
-	private ConcurrentLinkedQueue<Mil1553Packet> packetsForSendBC = new ConcurrentLinkedQueue<>();	
+	private Queue<Mil1553Packet> packetsForSendBC = new ConcurrentLinkedQueue<>();	
 	private Integer rtAddress=0;
 	private boolean initiliased = false;
 	private static Object syncObject = new Object();
@@ -644,6 +649,7 @@ public class Elcus1553Device {
 			packetsForSendBC.add(packet);
 		}
 	}
+	
 	private void listenLoopBC()
 	{
 		int events;
@@ -700,10 +706,10 @@ public class Elcus1553Device {
 					if (eventData.nInt==2)
 					{
 						Msg.status = EMilPacketStatus.eFAILED;																		
-						if (!packetsForSendBC.isEmpty())
-						{
-							packetsForSendBC.clear();
-						}
+						//if (!packetsForSendBC.isEmpty())
+						//{
+						//	packetsForSendBC.clear();
+						//}
 	                    if (eventData.union.bc.wResult==S_ERAO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
@@ -782,7 +788,7 @@ public class Elcus1553Device {
 					}
 					else
 					{
-						packetsForSendBC.remove(0);
+						//packetsForSendBC.remove(0);
 						for (DebugReceivedListener listener: DebugReceivedListeners)
 						{
 							listener.msgReceived("Exchange format is not realized yet");

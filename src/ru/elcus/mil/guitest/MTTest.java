@@ -368,7 +368,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 			sb.append("<li><b>Шина:</b> " + packet.bus + "</li>");
 			sb.append("<li><b>Дата:</b> " + TimeManipulation.ToLongTimeStringMillis(packet.date) + "</li>");
 			sb.append("<li><b>Описание:</b> " + packet.shortDescr + "</li>");
-			sb.append("<li><b>Статус:</b> " + packet.status + "</li></ul></div>");
+			sb.append("<li><b>Статус:</b> " + packet.status + " (" + packet.errorCode  + ")" + "</li></ul></div>");
 			
 			sb.append("<div class='datawords'><ul><li><b><i>Массив слов данных</i></b></li>");
 			for(int i = 0; i < packet.dataWords.length; i++)
@@ -394,7 +394,7 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					
 					try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(FILENAME), "UTF8"))) 
 					{
-						bw.write("<!DOCTYPE html><head><meta charset='UTF-8' /><title>" + statusDB.getText() + "</title><style>ul{list-style:none;} .wrap{ max-width:300px;margin:0 auto;border:1px solid black;} .wrap h3{text-align:center;border-bottom:1px solid black;padding-bottom:15px;}</style></head><body><h1 align='center'>" + statusDB.getText() + "</h1>");
+						bw.write("<!DOCTYPE html><head><meta charset='UTF-8' /><title>" + statusDB.getText() + "</title><style>ul{list-style:none;} .wrap{ max-width:400px;margin:0 auto;border:1px solid black;} .wrap h3{text-align:center;border-bottom:1px solid black;padding-bottom:15px;}</style></head><body><h1 align='center'>" + statusDB.getText() + "</h1>");
 						
 							for(int i = 0; i < listSize; i++)
 								bw.write(getHTMLpacket((Mil1553Packet) table.getModel().getValueAt(i,0), i));
