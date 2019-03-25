@@ -36,33 +36,13 @@ public class MTListViewModel extends DefaultTableModel{
 	private String dbFolder;
 	private static final String tablename = "metadata";	
 	private Connection conn;
-	Timer flushTimer = new Timer(true);
-	
+	Timer flushTimer;
+	TimerTask task;
 	Map<Integer,IMil1553Decoder> decoders = new HashMap<>();
 	private String column_names[]= {"Packets"};
 	
 	MTListViewModel(String dbFolder){
-		this.dbFolder = "jdbc:sqlite:" + dbFolder;
-		
-		
-		flushTimer.schedule(new TimerTask() {
-			
-			@Override
-			public void run() {
-				try
-				{
-					if (insertPrepareStatement!=null)
-					{
-						insertPrepareStatement.executeBatch();
-					}
-				}
-				catch (Exception ex)
-				{
-					System.out.println(ex.getLocalizedMessage());
-				}
-				
-			}
-		}, 200, 100);		
+		this.dbFolder = "jdbc:sqlite:" + dbFolder;	
 	}
 	
 	@Override
@@ -75,6 +55,11 @@ public class MTListViewModel extends DefaultTableModel{
         return column_names[index]; 
     } 
     
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        return false;
+    }
+    
 	public boolean checkConn(){
 		return (conn != null) ? true : false;
 	}
@@ -84,8 +69,7 @@ public class MTListViewModel extends DefaultTableModel{
 	public MTListViewModel(){}
 	
 	public void setConnection(String dbname){
-        try {
-        	
+        try {   	
             String url = dbFolder + dbname;
             // create a connection to the database
             conn = DriverManager.getConnection(url);
@@ -103,13 +87,12 @@ public class MTListViewModel extends DefaultTableModel{
 		
         try {
         	conn = DriverManager.getConnection(url);
-        	Statement stmt = conn.createStatement();
-        	
+        	conn.setAutoCommit(false);
+        	Statement stmt = conn.createStatement();        	
         	if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
-                System.out.println("A new database has been created.");
-              
+                System.out.println("A new database has been created.");               
                 String sql = "CREATE TABLE IF NOT EXISTS metadata (\n"
                         + "CommandWord,\n"
                         + "AnswerWord,\n"
@@ -119,9 +102,22 @@ public class MTListViewModel extends DefaultTableModel{
                         + ");";
                 
                 stmt.execute(sql);
+                flushTimer = new Timer(true);
+        		task = new TimerTask() {			
+        			@Override
+        			public void run() {								
+        				try {
+        					Commit();
+        				} catch (SQLException e) {
+        					// TODO Auto-generated catch block
+        					e.printStackTrace();
+        				}
+        			}
+        		};
+                flushTimer.schedule(task, 200, 5000);
                 insertPrepareStatement = conn.prepareStatement(metasql);
         	}
- 
+        	
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -129,10 +125,22 @@ public class MTListViewModel extends DefaultTableModel{
         return name;
 	}
 	
+	public void Commit() throws SQLException{
+		try {					
+			if(insertPrepareStatement != null && conn != null){
+			insertPrepareStatement.executeBatch();
+			conn.commit();
+			}
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+	}
 	public void closeConn(){
-		try {
-            if (conn != null)
-                conn.close();
+		try {	
+            task.cancel();
+            flushTimer.cancel();
+            if (conn != null) 
+                conn.close();     
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
@@ -146,26 +154,23 @@ public class MTListViewModel extends DefaultTableModel{
 		if (decoders.containsKey(Mil1553Packet.getRtAddress(packet.commandWord)))
 			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
 		synchronized (this) {
-			SwingUtilities.invokeLater(new Runnable() {
-					
+			SwingUtilities.invokeLater(new Runnable() {			
 				@Override
-				public void run() {
+				public void run() {						
 					addRow(new Object[]{packet});
+					try {								
+						insertPrepareStatement.setString(1, String.format("%04x", packet.commandWord));
+						insertPrepareStatement.setString(2, String.format("%04x",packet.answerWord));
+						insertPrepareStatement.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
+						insertPrepareStatement.setBytes(4, packet.dataWordsAsByteArray());
+						insertPrepareStatement.setString(5, String.valueOf(packet.sw));
+						insertPrepareStatement.addBatch(); 
+				    } catch (SQLException e) {
+				        System.out.println(e.getMessage());
+				    }	
 				}
 			});	
-		}			
-
-		try {	            
-			insertPrepareStatement.setString(1, String.format("%04x", packet.commandWord));
-			insertPrepareStatement.setString(2, String.format("%04x",packet.answerWord));
-			insertPrepareStatement.setDouble(3, TimeManipulation.getUnixTimeUTC(packet.date));;
-			insertPrepareStatement.setString(5, String.valueOf(packet.sw));
-			insertPrepareStatement.setBytes(4, packet.dataWordsAsByteArray());
-			insertPrepareStatement.addBatch();
-	            
-	    } catch (SQLException e) {
-	        System.out.println(e.getMessage());
-	    }		
+		}
 	}
 	
 	DefaultTableModel getListByQuery(String where){
@@ -178,12 +183,11 @@ public class MTListViewModel extends DefaultTableModel{
         	
 			Mil1553Packet packet;
 
-			
         	// loop through the result set
             while (rs.next()) {            	
             	short[] basedata = new short[64];            	
             	short cw = (short) Integer.parseInt(rs.getString("CommandWord"), 16);
-            	short aw = Short.parseShort(rs.getString("AnswerWord"), 16);
+            	short aw = (short) Integer.parseInt(rs.getString("AnswerWord"), 16);
             	EMilFormat format = Mil1553Packet.calcFormat(cw);                 	
             	short[] dw = new short[32];
             	
@@ -229,9 +233,8 @@ public class MTListViewModel extends DefaultTableModel{
         			decoders.get(Mil1553Packet.getRtAddress(packet.commandWord)).processPacket(packet);
         		
         		packet.date = TimeManipulation.getDateTimeFromUnixUTC(rs.getDouble("Date"));
-        		
         		this.addRow(new Object[]{packet});
-            }           
+            }     
             return this;  
             
         } catch (SQLException e) {

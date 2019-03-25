@@ -24,6 +24,7 @@ import ru.elcus.mil.structs.EBus;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
@@ -144,7 +145,14 @@ public class ChannelControllerTest {
 						e1.printStackTrace();
 					}										
 					device.addMsgReceivedListener((msg)->{
-						modelPacket.addElement(msg.toString());
+						synchronized (this) {
+							SwingUtilities.invokeLater(new Runnable() {								
+								@Override
+								public void run() {
+									modelPacket.addElement(msg.toString());
+								}
+							});	
+						}
 					});	 
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
@@ -192,22 +200,22 @@ public class ChannelControllerTest {
 				return "Data word ["+row+"]";
 			}
 			if (row == 0)
-				return Integer.toHexString(packet.commandWord).toUpperCase();
-			return Integer.toHexString(packet.dataWords[row-1]).toUpperCase();
+				return Integer.toHexString(packet.commandWord & 0xffff).toUpperCase();
+			return Integer.toHexString(packet.dataWords[row-1] & 0xffff).toUpperCase();
 		}
 		
 		@Override
 		public void setValueAt(Object aValue, int row, int column) {	
 			if (row == 0) {
 				try {
-					packet.commandWord=Short.parseShort(aValue.toString(),16);
+					packet.commandWord= (short) Integer.parseInt(aValue.toString(),16);
 				} catch(NumberFormatException e) {
 					modelPacket.addElement(e.getMessage()+"\n");
 				}
 				return;
 			}
 			try {
-				packet.dataWords[row-1]=Short.parseShort(aValue.toString(),16);
+				packet.dataWords[row-1]=(short) Integer.parseInt(aValue.toString(),16);
 			} catch(NumberFormatException e) {
 				modelPacket.addElement(e.getMessage()+"\n");
 			}
