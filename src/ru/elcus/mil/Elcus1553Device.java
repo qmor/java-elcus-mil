@@ -5,12 +5,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.junit.Assert;
 
 import com.sun.jna.Memory;
+import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.WinNT.HANDLE;
 
 import ru.elcus.mil.structs.CC;
 import ru.elcus.mil.structs.CLong2;
@@ -25,7 +27,7 @@ import ru.elcus.mil.structs.TTmkEventData;
 
 public class Elcus1553Device {
 
-
+	static final boolean isWindows = Platform.isWindows();
 
 	static final int TMK_VERSION_MIN =0x0403; /* v4.03 */
 	static final int TMK_VERSION =0x0406 ;    /* v4.06 */
@@ -130,7 +132,7 @@ public class Elcus1553Device {
 	static final int DNBA =0x10;
 
 	static final int CWB0 =0x20;
-	
+
 	static final int CWB1 =0x40;
 
 	static final int BC_MODE =0x00;
@@ -521,7 +523,8 @@ public class Elcus1553Device {
 	public int getCardNumber() {
 		return cardNumber;
 	}
-
+	
+	private HANDLE hEvent;
 	private List<IMilMsgReceivedListener> msgReceivedListeners = new ArrayList<>();
 	private List<DebugReceivedListener> DebugReceivedListeners = new ArrayList<>();
 	private ConcurrentLinkedQueue<Mil1553Packet> packetsForSendBC = new ConcurrentLinkedQueue<>();	
@@ -530,7 +533,7 @@ public class Elcus1553Device {
 	private static Object syncObject = new Object();
 	private int mtMaxBase;
 	MilWorkMode workMode = MilWorkMode.eMilWorkModeNotSetted;
-	
+
 	public MilWorkMode getWorkMode() {
 		return workMode;
 	}
@@ -540,12 +543,12 @@ public class Elcus1553Device {
 	{
 		msgReceivedListeners.add(listener);
 	}
-	
+
 	public void addDebugReceivedListener(DebugReceivedListener listener)
 	{
 		DebugReceivedListeners.add(listener);
 	}
-	
+
 	public void setPause(boolean pause) throws Eclus1553Exception
 	{
 		if (workMode.equals(MilWorkMode.eMilWorkModeRT))
@@ -554,7 +557,7 @@ public class Elcus1553Device {
 				int result  = tmkselect();
 				if (result!=0)
 					throw new Eclus1553Exception(this,"Ошибка tmkselect в функции setPause() "+result); 
-				
+
 				if(paused != pause)
 				{
 					result = rtenable(pause?RT_DISABLE:RT_ENABLE);
@@ -601,11 +604,13 @@ public class Elcus1553Device {
 		}
 	}
 	private Pointer rtSendPBuffer = new Memory(64*2);
-	private void sendPacketRT(Mil1553Packet packet)
+	private void sendPacketRT(Mil1553Packet packet) throws Eclus1553Exception
 	{
 		synchronized (syncObject) 
 		{
 			int result =  tmkselect();
+			if (result!=0)
+				throw new Eclus1553Exception(this,"Ошибка TmkOpen "+result);
 			Integer subaddressMode  =  Mil1553Packet.getSubAddress(packet.commandWord);
 			Integer rtrBit = Mil1553Packet.getRTRBit(packet.commandWord);
 			Integer wordcountModeCode = Mil1553Packet.getWordsCount(packet.commandWord);
@@ -632,12 +637,16 @@ public class Elcus1553Device {
 			}
 		}
 	}
-			
+
 	public void sendPacket(Mil1553Packet packet)
 	{
 		if (workMode == MilWorkMode.eMilWorkModeRT)
 		{
-			sendPacketRT(packet);
+			try {
+				sendPacketRT(packet);
+			} catch (Eclus1553Exception e) {
+				e.printStackTrace();
+			}
 		}
 		else if(workMode == MilWorkMode.eMilWorkModeBC)
 		{
@@ -650,10 +659,26 @@ public class Elcus1553Device {
 		TTmkEventData eventData = new TTmkEventData();
 		Mil1553Packet Msg = new Mil1553Packet();
 		Pointer pBuffer = new Memory(64*2);		
+		boolean passed=true;
 		while(threadRunning)
-		{
-			events = tmkwaitevents(1<<cardNumber, 10);
-			if (events==(1<<cardNumber))
+		{			
+			passed = false;
+			if(!isWindows)
+			{
+				events = tmkwaitevents(1 << cardNumber, 100);
+				if (events == (1 << cardNumber))
+				{
+					passed = true;
+				}
+			}
+			else {
+				events = Kernel32.INSTANCE.WaitForSingleObject(hEvent, 50);
+				if (events == Kernel32.WAIT_OBJECT_0) {
+					Kernel32.INSTANCE.ResetEvent(hEvent);
+					passed = true;
+				}
+			}	
+			if (passed)
 			{
 				synchronized (syncObject) {	
 					tmkselect();
@@ -696,7 +721,7 @@ public class Elcus1553Device {
 
 						Msg.status = EMilPacketStatus.eRECEIVED;
 					}
-					
+
 					if (eventData.nInt==2)
 					{
 						Msg.status = EMilPacketStatus.eFAILED;																		
@@ -704,12 +729,12 @@ public class Elcus1553Device {
 						{
 							packetsForSendBC.clear();
 						}
-	                    if (eventData.union.bc.wResult==S_ERAO_MASK)
+						if (eventData.union.bc.wResult==S_ERAO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The error in a field of the address received RW is found out");
 							}	
-	                    else if (eventData.union.bc.wResult == S_MEO_MASK)
+						else if (eventData.union.bc.wResult == S_MEO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The error of a code 'Manchester - 2' is found out at answer RT");
@@ -719,12 +744,12 @@ public class Elcus1553Device {
 							{
 								listener.msgReceived("The error of the echo - control over transfer BC is found out");
 							}	
-	                    else if (eventData.union.bc.wResult == S_TO_MASK)
+						else if (eventData.union.bc.wResult == S_TO_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("It is not received the answer from RT");
 							}	
-	                    else if (eventData.union.bc.wResult == S_IB_MASK)
+						else if (eventData.union.bc.wResult == S_IB_MASK)
 							for (DebugReceivedListener listener: DebugReceivedListeners)
 							{
 								listener.msgReceived("The established bits in received RW are found out");
@@ -758,8 +783,8 @@ public class Elcus1553Device {
 					{
 						bcdefbase(0);
 						bcputw(0,msg.commandWord);
-						bcdefbus(msg.bus.toInt());
-						bcstart(0,DATA_RT_BC);	
+						bcdefbus(msg.bus.toInt());						
+						bcstart(0,DATA_RT_BC);							
 						msg.status = EMilPacketStatus.eSENT;
 					}
 					else if (msg.format.equals(EMilFormat.CC_FMT_4) || msg.format.equals(EMilFormat.CC_FMT_5))
@@ -797,14 +822,29 @@ public class Elcus1553Device {
 	{
 		int events = 0;
 		int waitingtime = 10;
-		int res=0;
 		Mil1553Packet Msg = new Mil1553Packet();
 		TTmkEventData eventData = new TTmkEventData();
 		Pointer pBuffer = new Memory(32*2);
+		boolean passed = false;
 		while (threadRunning)
 		{
-			events = tmkwaitevents(1 << cardNumber, waitingtime);
-			if (events == (1 << cardNumber))
+			passed = false;
+			if(!isWindows)
+			{
+				events = tmkwaitevents(1 << cardNumber, waitingtime);
+				if (events == (1 << cardNumber))
+				{
+					passed = true;
+				}
+			}
+			else {
+				events = Kernel32.INSTANCE.WaitForSingleObject(hEvent, 100);
+				if (events == Kernel32.WAIT_OBJECT_0) {
+					Kernel32.INSTANCE.ResetEvent(hEvent);
+					passed = true;
+				}
+			}
+			if (passed)
 			{
 				synchronized (syncObject) {
 					tmkselect();
@@ -815,7 +855,7 @@ public class Elcus1553Device {
 						Msg.dataWords[0] = (short) rtgetcmddata(Msg.commandWord & 31);
 						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;	
-						
+
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -841,7 +881,7 @@ public class Elcus1553Device {
 						System.arraycopy(buffer, 0, Msg.dataWords, 0, 32);
 						Msg.date = LocalDateTime.now();
 						Msg.status = EMilPacketStatus.eRECEIVED;						
-						
+
 						for (IMilMsgReceivedListener listener: msgReceivedListeners)
 						{
 							listener.msgReceived(Msg);
@@ -851,15 +891,15 @@ public class Elcus1553Device {
 			}
 		}
 	}
-	
+
 	boolean listenthreadwork = true;
-	
+
 	private void listenLoopMT()
 	{
-		
+
 		ConcurrentLinkedQueue<Mil1553Packet> list = new ConcurrentLinkedQueue<>();
 		Thread listenerThread = new Thread(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
@@ -867,26 +907,41 @@ public class Elcus1553Device {
 				{
 					Mil1553Packet packet = list.poll();
 					if (packet!=null)
-					for (IMilMsgReceivedListener listener: msgReceivedListeners)
-					{
-						listener.msgReceived(packet);
-					}
+						for (IMilMsgReceivedListener listener: msgReceivedListeners)
+						{
+							listener.msgReceived(packet);
+						}
 				}
 			}
 		});
 		listenerThread.start();
-		
+
 		int events = 0;
 		int waitingtime = 10;
-		
+		boolean passed=false;
 		int res=0;
 		TTmkEventData eventData = new TTmkEventData();
 		int sw;
 		Pointer pBuffer = new Memory(64*2);
 		while (threadRunning)
 		{
-			events = tmkwaitevents(1 << cardNumber, waitingtime);
-			if (events == (1 << cardNumber))
+			passed = false;
+			if(!isWindows)
+			{
+				events = tmkwaitevents(1 << cardNumber, waitingtime);
+				if (events == (1 << cardNumber))
+				{
+					passed = true;
+				}
+			}
+			else {
+				events = Kernel32.INSTANCE.WaitForSingleObject(hEvent, 100);
+				if (events == Kernel32.WAIT_OBJECT_0) {
+					Kernel32.INSTANCE.ResetEvent(hEvent);
+					passed = true;
+				}
+			}
+			if (passed)
 			{
 				synchronized (syncObject) {
 					tmkselect();
@@ -908,10 +963,10 @@ public class Elcus1553Device {
 							mtgetblk(0, pBuffer, 64);
 							short[] buffer = pBuffer.getShortArray(0,64); //TODO: где то тут есть ошибка
 
-					
+
 							Mil1553RawPacketMT rawPacket = new Mil1553RawPacketMT(buffer,sw,statusword);
 							Mil1553Packet packet = new Mil1553Packet(rawPacket);
-						
+
 							list.add(packet);
 							++mtLastBase;
 							if (mtLastBase > mtMaxBase)
@@ -924,7 +979,7 @@ public class Elcus1553Device {
 		listenthreadwork = false;
 		listenerThread.stop();
 	}
-	
+
 	public void initAs(MilWorkMode demandWorkMode) throws Eclus1553Exception
 	{
 		int result = 0;
@@ -935,14 +990,17 @@ public class Elcus1553Device {
 			result =tmkOpen();
 			if (result!=0)
 				throw new Eclus1553Exception(this,"Ошибка TmkOpen "+result);
-
-
+			
+			if(isWindows)
+				hEvent = Kernel32.INSTANCE.CreateEvent(null,true,false,null);
 			result = tmkconfig();
 			if (result!=0)
 				throw new Eclus1553Exception(this,"Ошибка tmkconfig "+result);
+			if (isWindows) 				
+				WdmTmk.INSTANCE.tmkdefevent(hEvent, 1);
 			result = tmkselect();
 			if (result!=0)
-				throw new Eclus1553Exception(this,"Ошибка tmkselect "+result);
+				throw new Eclus1553Exception(this,"Ошибка tmkselect "+result);		
 			if (demandWorkMode.equals(MilWorkMode.eMilWorkModeMT))
 			{
 				result = mtreset();
@@ -1014,18 +1072,24 @@ public class Elcus1553Device {
 	{
 		this.cardNumber = cardNumber;
 	}
-	Integer rtbusy()
+	int rtbusy()
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtbusy,0));
+		if (!isWindows) 				
+			return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtbusy,0));
+		return (WdmTmk.INSTANCE.rtbusy());
 	}
 	int rtgetcmddata(int rtBusCommand)
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetcmddata, rtBusCommand));
+		if (!isWindows) 
+			return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetcmddata, rtBusCommand));
+		return (WdmTmk.INSTANCE.rtgetcmddata((short)rtBusCommand));
 	}
 
 	int rtenable(int rtEnable)
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtenable, rtEnable));
+		if (!isWindows) 
+			return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtenable, rtEnable));
+		return (WdmTmk.INSTANCE.rtenable(rtEnable));
 	}
 	static int tmkOpen()
 	{
@@ -1035,24 +1099,41 @@ public class Elcus1553Device {
 		if (_hVTMK4VxD != 0)
 			return 0;
 
-		_hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
-		if (_hVTMK4VxD < 0)
+		if (!isWindows)
 		{
-			ErrorCode = _hVTMK4VxD;
-			_hVTMK4VxD = 0;
-			return ErrorCode;
+			_hVTMK4VxD = CLibrary.INSTANCE.open("/dev/tmk1553b", 0);
+			if (_hVTMK4VxD < 0)
+			{
+				ErrorCode = _hVTMK4VxD;
+				_hVTMK4VxD = 0;
+				return ErrorCode;
+			}
 		}
-		if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+		else
 		{
-			CLibrary.INSTANCE.close(_hVTMK4VxD);
-			_hVTMK4VxD = 0;
-			return VTMK_BAD_VERSION;
+			ErrorCode = WdmTmk.INSTANCE.TmkOpen();			
+			if (ErrorCode!=0)
+			{
+				System.out.println("TmkOpen error "+ErrorCode);
+			}
 		}
+		if (!isWindows)
+		{
+			if ((_VTMK4Arg = CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCGetVersion, 0)) < 0 || _VTMK4Arg < TMK_VERSION_MIN)
+			{
+				CLibrary.INSTANCE.close(_hVTMK4VxD);
+				_hVTMK4VxD = 0;
+				return VTMK_BAD_VERSION;
+			}
+		}
+
 		return 0;
 	}
 	int mtgetsw()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0);
+		if (!isWindows) 
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtgetsw,0);
+		return WdmTmk.INSTANCE.mtgetsw();
 	}
 	int tmkconfig()
 	{
@@ -1060,12 +1141,16 @@ public class Elcus1553Device {
 	}
 	private int tmkconfig(int tmkNumber)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);
+		if (!isWindows)		
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkconfig, tmkNumber);		
+		return WdmTmk.INSTANCE.tmkconfig(tmkNumber);
 	}
 
 	int tmkgetmaxn()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmaxn, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmaxn, 0);
+		return WdmTmk.INSTANCE.tmkgetmaxn();
 	}
 
 	int tmkdone()
@@ -1074,7 +1159,9 @@ public class Elcus1553Device {
 	}
 	private int tmkdone(int tmkNumber)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkdone, tmkNumber);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkdone, tmkNumber);
+		return WdmTmk.INSTANCE.tmkdone(tmkNumber);
 	}
 
 	int tmkselect()
@@ -1083,32 +1170,46 @@ public class Elcus1553Device {
 	}
 	private int tmkselect(int tmkNumber)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselect, tmkNumber);		
+		return WdmTmk.INSTANCE.tmkselect(tmkNumber);
 	}
 
 	int tmkselected()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselected, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkselected, 0);
+		return WdmTmk.INSTANCE.tmkselected();
 	}
 
 	int tmkgetmode()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmode, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetmode, 0);
+		return WdmTmk.INSTANCE.tmkgetmode();
 	}
 
 	void tmksetcwbits(int tmkSetControl)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkSetControl);
+		if (!isWindows)	
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkSetControl);
+		else
+			WdmTmk.INSTANCE.tmksetcwbits(tmkSetControl);
 	}
 
 	void tmkclrcwbits(int tmkClrControl)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkClrControl);
+		if (!isWindows)	
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmksetcwbits, tmkClrControl);
+		else
+			WdmTmk.INSTANCE.tmkclrcwbits(tmkClrControl);
 	}
 
 	int tmkgetcwbits()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetcwbits, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetcwbits, 0);
+		return WdmTmk.INSTANCE.tmkgetcwbits();
 	}
 
 	int tmkwaitevents(int maskEvents, int fWait)
@@ -1120,97 +1221,110 @@ public class Elcus1553Device {
 	}
 
 	void tmkgetevd(TTmkEventData pEvD)
-	{   
-
-		CC cc = new CC();
-
-
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd&0xffffffff, cc.getPointer());
-		ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
-		pEvD.nInt = bb.getInt();
-		pEvD.wMode = bb.getShort();
-		switch (pEvD.wMode&0xffff)
-		{
-		case BC_MODE:
-			switch (pEvD.nInt)
+	{   				
+		if(!isWindows) {
+			CC cc = new CC();
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetevd&0xffffffff, cc.getPointer());
+							
+			ByteBuffer bb =  cc.getPointer().getByteBuffer(0, 6*2);
+			pEvD.nInt = bb.getInt();
+			pEvD.wMode = bb.getShort();
+			switch (pEvD.wMode&0xffff)
 			{
-			case 1:
-				pEvD.union.bc.wResult = bb.getShort();
+			case BC_MODE:
+				switch (pEvD.nInt)
+				{
+				case 1:
+					pEvD.union.bc.wResult = bb.getShort();
+					break;
+				case 2:
+					pEvD.union.bc.wResult = bb.getShort();
+					pEvD.union.bc.wAW1 = bb.getShort();
+					pEvD.union.bc.wAW2 = bb.getShort();
+					break;
+				case 3:
+					pEvD.union.bcx.wResultX = bb.getShort();
+					pEvD.union.bcx.wBase = bb.getShort();
+					break;
+				case 4:
+					pEvD.union.bcx.wBase = bb.getShort();
+					break;
+				}
 				break;
-			case 2:
-				pEvD.union.bc.wResult = bb.getShort();
-				pEvD.union.bc.wAW1 = bb.getShort();
-				pEvD.union.bc.wAW2 = bb.getShort();
+			case MT_MODE:
+				switch (pEvD.nInt)
+				{
+				case 3:
+					pEvD.union.mt.wResultX = bb.getShort();
+					pEvD.union.mt.wBase = bb.getShort();
+					break;
+				case 4:
+					pEvD.union.mt.wBase = bb.getShort();
+					break;
+				}
 				break;
-			case 3:
-				pEvD.union.bcx.wResultX = bb.getShort();
-				pEvD.union.bcx.wBase = bb.getShort();
+			case RT_MODE:
+				switch (pEvD.nInt)
+				{
+				case 1:
+					pEvD.union.rt.wCmd = bb.getShort();
+					break;
+				case 2:
+				case 3:
+					pEvD.union.rt.wStatus = bb.getShort();
+					break;
+				}
 				break;
-			case 4:
-				pEvD.union.bcx.wBase = bb.getShort();
+			case MRT_MODE:
+				pEvD.union.mrt.wStatus = bb.getShort();
+				break;
+			case UNDEFINED_MODE:
+				pEvD.union.tmk.wRequest = bb.getShort();
 				break;
 			}
-			break;
-		case MT_MODE:
-			switch (pEvD.nInt)
-			{
-			case 3:
-				pEvD.union.mt.wResultX = bb.getShort();
-				pEvD.union.mt.wBase = bb.getShort();
-				break;
-			case 4:
-				pEvD.union.mt.wBase = bb.getShort();
-				break;
-			}
-			break;
-		case RT_MODE:
-			switch (pEvD.nInt)
-			{
-			case 1:
-				pEvD.union.rt.wCmd = bb.getShort();
-				break;
-			case 2:
-			case 3:
-				pEvD.union.rt.wStatus = bb.getShort();
-				break;
-			}
-			break;
-		case MRT_MODE:
-			pEvD.union.mrt.wStatus = bb.getShort();
-			break;
-		case UNDEFINED_MODE:
-			pEvD.union.tmk.wRequest = bb.getShort();
-			break;
 		}
+		else
+			WdmTmk.INSTANCE.tmkgetevd(pEvD);
 	}
 
 	void tmkgetinfo(TTmkConfigData pConfD)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD.getPointer());
+		if (!isWindows)	
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCtmkgetinfo, pConfD.getPointer());
+		else
+			WdmTmk.INSTANCE.tmkgetinfo(pConfD);
 	}
 
 	int bcreset()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcreset, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcreset, 0);
+		return WdmTmk.INSTANCE.bcreset();
 	}
 
 	int mtreset()
 	{
-		return (CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtreset,0));
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCmtreset,0);		
+		return WdmTmk.INSTANCE.mtreset();
 	}
 
 	int mtdefirqmode(int mtIrqMode)
-	{
-		return bcdefirqmode(mtIrqMode);
+	{		
+		return bcdefirqmode(mtIrqMode);		
 	}
 	int bcdefirqmode(int bcIrqMode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefirqmode, bcIrqMode);
+		return WdmTmk.INSTANCE.bcdefirqmode(bcIrqMode);
 	}
 
 	int bcgetirqmode()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
+		if (!isWindows)		
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetirqmode, 0);
+		return WdmTmk.INSTANCE.bcgetirqmode();
 	}
 
 	int mtgetmaxbase()
@@ -1219,7 +1333,9 @@ public class Elcus1553Device {
 	}
 	int bcgetmaxbase()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetmaxbase, 0);
+		if (!isWindows)	
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetmaxbase, 0);
+		return WdmTmk.INSTANCE.bcgetmaxbase();
 	}
 
 	int mtdefbase(int mtBasePC)
@@ -1228,29 +1344,41 @@ public class Elcus1553Device {
 	}
 	int bcdefbase(int bcBasePC)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbase&0xffffffff, bcBasePC);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbase&0xffffffff, bcBasePC);
+		return WdmTmk.INSTANCE.bcdefbase(bcBasePC);
 	}
 
 	int bcgetbase()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbase, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbase, 0);
+		return WdmTmk.INSTANCE.bcgetbase();
 	}
 
 	void bcputw(int bcAddr, int bcData)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputw, bcAddr | (bcData << 16));
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputw, bcAddr | (bcData << 16));
+		else
+			WdmTmk.INSTANCE.bcputw(bcAddr, bcData);
 	}
 
 	int bcgetw(int bcAddr)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetw, bcAddr);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetw, bcAddr);
+		return WdmTmk.INSTANCE.bcgetw(bcAddr);
 	}
 
 	int bcgetansw(int bcCtrlCode)
 	{
 		int _VTMK4Arg;
 		_VTMK4Arg = bcCtrlCode;
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetansw, _VTMK4Arg);
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetansw, _VTMK4Arg);
+		else
+			WdmTmk.INSTANCE.bcgetansw(bcCtrlCode);
 		return _VTMK4Arg;
 	}
 
@@ -1261,11 +1389,17 @@ public class Elcus1553Device {
 		bb.putInt((rtAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetblk, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetblk, c.getPointer());
+		else
+			WdmTmk.INSTANCE.rtgetblk(rtAddr, pcBuffer, cwLength);
 	}
-	void rtputcmddata(Integer rtBusCommand, Integer rtData)
+	void rtputcmddata(int rtBusCommand, int rtData)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputcmddata, rtBusCommand | (rtData << 16));
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputcmddata, rtBusCommand | (rtData << 16));
+		else
+			WdmTmk.INSTANCE.rtputcmddata(rtBusCommand, rtData);
 	}
 	void rtputblk(Integer rtAddr, Pointer pcBuffer, Integer cwLength)
 	{
@@ -1274,7 +1408,10 @@ public class Elcus1553Device {
 		bb.putInt((rtAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+		else	
+			WdmTmk.INSTANCE.rtputblk(rtAddr, pcBuffer, cwLength);
 	}
 
 	void bcputblk(int bcAddr, Pointer pcBuffer, short cwLength)
@@ -1284,11 +1421,16 @@ public class Elcus1553Device {
 		bb.putInt((bcAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk&0xffffffff, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcputblk&0xffffffff, c.getPointer());
+		else
+			WdmTmk.INSTANCE.bcputblk(bcAddr, pcBuffer, cwLength);
 	}
 	void mtgetblk(int mtAddr, Pointer pcBuffer, int cwLength)
 	{
-		bcgetblk(mtAddr, pcBuffer, cwLength);
+		if (!isWindows)
+			bcgetblk(mtAddr, pcBuffer, cwLength);	
+		WdmTmk.INSTANCE.bcgetblk(mtAddr, pcBuffer, cwLength);
 	}
 	void bcgetblk(int bcAddr, Pointer pcBuffer, int cwLength)
 	{		
@@ -1297,22 +1439,31 @@ public class Elcus1553Device {
 		bb.putInt((bcAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk&0xffffffff, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetblk&0xffffffff, c.getPointer());
+		else
+			WdmTmk.INSTANCE.bcgetblk(bcAddr, pcBuffer, cwLength);
 	}
 
 	int bcdefbus(int bcBus)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbus, bcBus);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdefbus, bcBus);
+		return WdmTmk.INSTANCE.bcdefbus(bcBus);
 	}
 
 	int bcgetbus()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbus, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetbus, 0);
+		return WdmTmk.INSTANCE.bcgetbus();
 	}
 
 	int bcstart(int bcBase, int bcCtrlCode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstart, bcBase | (bcCtrlCode << 16));
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstart, bcBase | (bcCtrlCode << 16));
+		return WdmTmk.INSTANCE.bcstart(bcBase, bcCtrlCode);
 	}
 
 	int mtstartx(int mtBase, int mtCtrlCode)
@@ -1320,7 +1471,7 @@ public class Elcus1553Device {
 		int res = 0;
 		if (paused)
 		{
-			res= bcstartx(mtBase,mtCtrlCode);
+			res = bcstartx(mtBase,mtCtrlCode);
 			if (res == 0)
 				paused=false;
 		}
@@ -1328,7 +1479,9 @@ public class Elcus1553Device {
 	}
 	int bcstartx(int bcBase, int bcCtrlCode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstartx, bcBase | (bcCtrlCode << 16));
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstartx, bcBase | (bcCtrlCode << 16));
+		return WdmTmk.INSTANCE.bcstartx(bcBase, bcCtrlCode);
 	}
 
 	int mtdeflink(int mtBase, int mtCtrlCode)
@@ -1337,7 +1490,9 @@ public class Elcus1553Device {
 	}
 	int bcdeflink(int bcBase, int bcCtrlCode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcdeflink, bcBase | (bcCtrlCode << 16));
+		return WdmTmk.INSTANCE.bcdeflink(bcBase, bcCtrlCode);
 	}
 
 	int bcgetlink() 
@@ -1347,7 +1502,10 @@ public class Elcus1553Device {
 			int _VTMK4Arg;
 		}
 		C c = new C();
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetlink, c.getPointer());
+		else
+			WdmTmk.INSTANCE.bcgetlink();
 		return c._VTMK4Arg;
 	}
 
@@ -1361,11 +1519,13 @@ public class Elcus1553Device {
 				paused=true;
 		}
 		return res;
-		 
+
 	}
 	int bcstop()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstop, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcstop, 0);
+		return WdmTmk.INSTANCE.bcstop();
 	}
 
 	int bcgetstate()
@@ -1375,98 +1535,138 @@ public class Elcus1553Device {
 			int _VTMK4Arg;
 		}
 		C c = new C();
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCbcgetstate, c.getPointer());
+		else 
+			WdmTmk.INSTANCE.bcgetstate();
 		return c._VTMK4Arg;
 	}
 
 	int rtreset()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtreset, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtreset, 0);
+		return WdmTmk.INSTANCE.rtreset();
 	}
 
 	int rtdefirqmode(int rtIrqMode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefirqmode, rtIrqMode);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefirqmode, rtIrqMode);
+		return WdmTmk.INSTANCE.rtdefirqmode(rtIrqMode);
 	}
 
 	int rtgetirqmode()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode,0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetirqmode,0);
+		return WdmTmk.INSTANCE.rtgetirqmode();
 	}
 
 	int rtdefmode(int rtMode)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefmode, rtMode);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefmode, rtMode);
+		return WdmTmk.INSTANCE.rtdefmode(rtMode);
 	}
 
 	int rtgetmode()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmode, 0);
+		return WdmTmk.INSTANCE.rtgetmode();
 	}
 
 	int rtgetmaxpage()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetmaxpage, 0);
+		return WdmTmk.INSTANCE.rtgetmaxpage();
 	}
 
 	int rtdefpage(int rtPage)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpage, rtPage);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpage, rtPage);
+		return WdmTmk.INSTANCE.rtdefpage(rtPage);
 	}
 
 	int rtgetpage()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpage, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpage, 0);
+		return WdmTmk.INSTANCE.rtgetpage();
 	}
 
 	int rtdefpagepc(int rtPagePC)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagepc, rtPagePC);
+		return WdmTmk.INSTANCE.rtdefpagepc(rtPagePC);
 	}
 
 	int rtdefpagebus(int rtPageBus)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagebus, rtPageBus);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefpagebus, rtPageBus);
+		return WdmTmk.INSTANCE.rtdefpagebus(rtPageBus);
 	}
 
 	int rtgetpagepc()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagepc, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagepc, 0);
+		return WdmTmk.INSTANCE.rtgetpagepc();
 	}
 
 	int rtgetpagebus()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagebus, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetpagebus, 0);
+		return WdmTmk.INSTANCE.rtgetpagebus();
 	}
 
 	int rtdefaddress(int rtAddress)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefaddress, rtAddress);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefaddress, rtAddress);
+		return WdmTmk.INSTANCE.rtdefaddress(rtAddress);
 	}
 
 	int rtgetaddress()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetaddress, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetaddress, 0);
+		return WdmTmk.INSTANCE.rtgetaddress();
 	}
 
 	void rtdefsubaddr(int rtDir, int rtSubAddr)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefsubaddr, rtDir | (rtSubAddr << 16));
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtdefsubaddr, rtDir | (rtSubAddr << 16));
+		else
+			WdmTmk.INSTANCE.rtdefsubaddr(rtDir, rtSubAddr);
 	}
 
 	int rtgetsubaddr()
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetsubaddr, 0);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetsubaddr, 0);
+		return WdmTmk.INSTANCE.rtgetsubaddr();
 	}
 
 	void rtputw(int rtAddr, int rtData)
 	{
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputw, rtAddr | (rtData << 16));
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputw, rtAddr | (rtData << 16));
+		else WdmTmk.INSTANCE.rtputw(rtAddr, rtData);
 	}
 
 	int rtgetw(int rtAddr)
 	{
-		return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
+		if (!isWindows)
+			return CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtgetw, rtAddr);
+		return WdmTmk.INSTANCE.rtgetw(rtAddr);
 	}
 
 	void rtputblk(int rtAddr, Pointer pcBuffer, short cwLength)
@@ -1476,8 +1676,9 @@ public class Elcus1553Device {
 		bb.putInt((rtAddr|cwLength<<16));
 		bb.putInt(0);
 		bb.putLong(Pointer.nativeValue(pcBuffer));
-
-		CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+		if (!isWindows)
+			CLibrary.INSTANCE.ioctl(_hVTMK4VxD, TMK_IOCrtputblk, c.getPointer());
+		else
+			WdmTmk.INSTANCE.rtputblk(rtAddr, pcBuffer, cwLength);
 	}
-
 }
