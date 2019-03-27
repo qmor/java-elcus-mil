@@ -309,10 +309,10 @@ class ActionListenerController extends MouseAdapter implements ActionListener {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				
+				setDevicePause(false);
 				device.addMsgReceivedListener((msg)->{
 					model.insertElementAndAddToList(msg);
-				});
+				});				
 			}
 			else
 			{

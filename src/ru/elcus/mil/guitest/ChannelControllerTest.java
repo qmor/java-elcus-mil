@@ -24,6 +24,7 @@ import ru.elcus.mil.structs.EBus;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
@@ -144,7 +145,14 @@ public class ChannelControllerTest {
 						e1.printStackTrace();
 					}										
 					device.addMsgReceivedListener((msg)->{
-						modelPacket.addElement(msg.toString());
+						synchronized (this) {
+							SwingUtilities.invokeLater(new Runnable() {								
+								@Override
+								public void run() {
+									modelPacket.addElement(msg.toString());
+								}
+							});
+						}
 					});	 
 					device.addDebugReceivedListener((msg)->{
 						modelPacket.addElement(msg);
