@@ -76,7 +76,7 @@ public class MTPacketGUI {
 		l_bus.setText(String.valueOf(packet.bus));
 		l_date.setText(TimeManipulation.ToLongTimeStringMillis(packet.date));
 		l_format.setText(String.valueOf(packet.format));
-		l_status.setText(String.valueOf(packet.status));
+		l_status.setText(String.valueOf(packet.status + "(" + packet.errorCode + ")"));
 		editorPane.setText(packet.decodeHTMLString);
 		tm = new TableModel(packet);
 		table.setModel(tm);
