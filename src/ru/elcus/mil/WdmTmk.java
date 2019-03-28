@@ -23,7 +23,7 @@ public class WdmTmk {
 		 void tmksetcwbits(short tmkSetControl);
 		 void tmkclrcwbits(short tmkClrControl);
 		 short tmkgetcwbits();
-		 void tmkdefevent( HANDLE hEvent, int fEventSet );
+		 void tmkdefevent( HANDLE hEvent, boolean fEventSet );
 		 void tmkgetevd( TTmkEventData pEvD );
 		 void tmkgetinfo(TTmkConfigData pConfD);
 		 int bcreset();

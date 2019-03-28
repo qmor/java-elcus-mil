@@ -514,7 +514,7 @@ public class Elcus1553Device {
 
 	static final int  TMK_IOCmrtgetbrcpage  = ioctl._IO(TMK_IOC_MAGIC, VTMK_mrtgetbrcpage+TMK_IOC0);
 
-	boolean paused=true;
+	boolean paused=false;
 	int mtLastBase = 0;
 	private Thread runnerThread;
 
@@ -672,7 +672,7 @@ public class Elcus1553Device {
 				}
 			}
 			else {
-				events = Kernel32.INSTANCE.WaitForSingleObject(hEvent, 1000);
+				events = Kernel32.INSTANCE.WaitForSingleObject(hEvent, 100);
 				if (events == Kernel32.WAIT_OBJECT_0) {
 					Kernel32.INSTANCE.ResetEvent(hEvent);
 					passed = true;
@@ -945,8 +945,8 @@ public class Elcus1553Device {
 					}
 					else if (eventData.nInt == 4)
 					{
-						while (mtLastBase != eventData.union.mt.wBase)
-						{
+						//while (mtLastBase != eventData.union.mt.wBase)
+						//{
 							res = mtdefbase(mtLastBase);
 
 							sw = mtgetsw();
@@ -963,7 +963,7 @@ public class Elcus1553Device {
 							++mtLastBase;
 							if (mtLastBase > mtMaxBase)
 								mtLastBase = 0;
-						}
+						//}
 					}
 				}
 			}
@@ -985,14 +985,18 @@ public class Elcus1553Device {
 			
 			if(isWindows)
 				hEvent = Kernel32.INSTANCE.CreateEvent(null,true,false,null);
+			
 			result = tmkconfig();
 			if (result!=0)
-				throw new Eclus1553Exception(this,"Ошибка tmkconfig "+result);
-			if (isWindows) 				
-				WdmTmk.INSTANCE.tmkdefevent(hEvent, 1);
+				throw new Eclus1553Exception(this,"Ошибка tmkconfig "+result);						
+			
 			result = tmkselect();
 			if (result!=0)
-				throw new Eclus1553Exception(this,"Ошибка tmkselect "+result);		
+				throw new Eclus1553Exception(this,"Ошибка tmkselect "+result);	
+			
+			if (isWindows) 				
+				WdmTmk.INSTANCE.tmkdefevent(hEvent, true);
+			
 			if (demandWorkMode.equals(MilWorkMode.eMilWorkModeMT))
 			{
 				result = mtreset();
@@ -1028,7 +1032,7 @@ public class Elcus1553Device {
 				{
 					throw new Eclus1553Exception(this,"Ошибка rtdefaddress "+result);
 				}
-
+				
 				result = rtdefmode(0);
 				result|= rtdefirqmode(0);				
 				rtenable(RT_DISABLE);
@@ -1041,6 +1045,7 @@ public class Elcus1553Device {
 				{
 					throw new Eclus1553Exception(this,"Ошибка bcreset() "+result);
 				}
+				
 				result|=bcdefirqmode(RT_GENER1_BL|RT_GENER2_BL);
 
 				if (result!=0)

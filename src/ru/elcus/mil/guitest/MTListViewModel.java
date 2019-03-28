@@ -183,7 +183,7 @@ public class MTListViewModel extends DefaultTableModel{
             while (rs.next()) {            	
             	short[] basedata = new short[64];            	
             	short cw = (short) Integer.parseInt(rs.getString("CommandWord"), 16);
-            	short aw = Short.parseShort(rs.getString("AnswerWord"), 16);
+            	short aw = (short) Integer.parseInt(rs.getString("AnswerWord"), 16);
             	EMilFormat format = Mil1553Packet.calcFormat(cw);                 	
             	short[] dw = new short[32];
             	
